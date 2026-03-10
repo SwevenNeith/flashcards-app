@@ -8,10 +8,6 @@ const searchQuery = ref('')
 const isAddingDomaine = ref(false)
 const isDeleteMode = ref(false)
 
-onMounted(() => {
-  domainesStore.loadFromLocalStorage()
-})
-
 const filteredDomaines = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
   if (!query) return domainesStore.domaines
