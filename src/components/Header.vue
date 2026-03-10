@@ -22,9 +22,12 @@ const closeMenu = () => {
 <template>
   <header class="main-header">
     <div class="header-content">
-      <div class="spacer"></div>
+      <router-link to="/" class="logo-link" title="Retour à l'accueil">
+        <img src="../assets/flashcards.png" alt="Flashcards Logo" class="header-logo" />
+      </router-link>
       <h1>{{ title }}</h1>
       <div class="menu-container">
+
         <button class="menu-button" @click="toggleMenu" aria-label="Menu">
           <svg viewBox="0 0 24 24" width="24" height="24">
             <path fill="currentColor" d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" />
@@ -65,9 +68,19 @@ const closeMenu = () => {
   width: 100%;
 }
 
-.spacer {
-  width: 40px; /* Equal to menu button width to keep title centered */
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  width: 40px;
 }
+
+.header-logo {
+  height: 32px;
+  width: auto;
+  border-radius: 4px;
+}
+
 
 .main-header h1 {
   margin: 0;
