@@ -1,17 +1,28 @@
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Header from './components/Header.vue'
+
+const route = useRoute()
+
+const pageTitle = computed(() => {
+  switch (route.name) {
+    case 'home':
+      return 'Accueil'
+    case 'domaines':
+      return 'Domaines'
+    default:
+      return 'Flashcards'
+  }
+})
+
 </script>
 
 <template>
   <div class="app-container">
-    <Header title="Accueil" />
+    <Header :title="pageTitle" />
 
-
-    <main class="content">
-      <p class="welcome-text">
-        Bienvenu sur Flashcards. L'application est en cours de création, veuillez patienter.
-      </p>
-    </main>
+    <RouterView />
   </div>
 </template>
 
@@ -21,23 +32,8 @@ import Header from './components/Header.vue'
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-}
-
-.content {
-  flex: 1;
-  padding: 2rem 1rem;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  text-align: center;
-}
-
-
-.welcome-text {
-  font-size: 1.1rem;
-  color: #2c3e50;
-  line-height: 1.5;
-  max-width: 500px;
+  background-color: #f8f9fa;
 }
 </style>
+
 

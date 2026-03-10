@@ -1,15 +1,45 @@
 <script setup>
+import { ref } from 'vue'
+
 defineProps({
   title: {
     type: String,
     default: 'Accueil'
   }
 })
+
+const isMenuOpen = ref(false)
+
+const toggleMenu = () => {
+  isMenuOpen.value = !isMenuOpen.value
+}
+
+const closeMenu = () => {
+  isMenuOpen.value = false
+}
 </script>
 
 <template>
   <header class="main-header">
-    <h1>{{ title }}</h1>
+    <div class="header-content">
+      <div class="spacer"></div>
+      <h1>{{ title }}</h1>
+      <div class="menu-container">
+        <button class="menu-button" @click="toggleMenu" aria-label="Menu">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path fill="currentColor" d="M12,16A2,2 0 0,1 14,18A2,2 0 0,1 12,20A2,2 0 0,1 10,18A2,2 0 0,1 12,16M12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12A2,2 0 0,1 12,10M12,4A2,2 0 0,1 14,6A2,2 0 0,1 12,8A2,2 0 0,1 10,6A2,2 0 0,1 12,4Z" />
+          </svg>
+        </button>
+        <transition name="fade">
+          <div v-if="isMenuOpen" class="dropdown-menu" @click="closeMenu">
+            <router-link to="/domaines" class="menu-item">Domaines</router-link>
+          </div>
+
+        </transition>
+
+      </div>
+    </div>
+    <div v-if="isMenuOpen" class="menu-overlay" @click="closeMenu"></div>
   </header>
 </template>
 
@@ -17,17 +47,112 @@ defineProps({
 .main-header {
   background-color: #048B9A; /* Blue Duck / Teal */
   color: white;
-  padding: 1rem;
+  padding: 0 1rem;
+  height: 60px;
   display: flex;
-  justify-content: center;
   align-items: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.spacer {
+  width: 40px; /* Equal to menu button width to keep title centered */
 }
 
 .main-header h1 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
+  text-align: center;
+  flex: 1;
+}
+
+.menu-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.menu-button {
+  background: none;
+  border: none;
+  color: white;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  min-width: 156px;
+  margin-top: 8px;
+  overflow: hidden;
+  z-index: 102;
+}
+
+.menu-item {
+  display: block;
+  padding: 12px 16px;
+  color: #2c3e50;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #f8f9fa;
+}
+
+.menu-item.router-link-active {
+  color: #048B9A;
+  font-weight: 600;
+  background-color: #f0f7f8;
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 101;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
+
