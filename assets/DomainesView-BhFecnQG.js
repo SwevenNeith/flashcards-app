@@ -1,1 +1,0 @@
-import{_ as t,c as s,a,o}from"./index-CckKrUpQ.js";const n={},c={class:"content"};function r(i,e){return o(),s("main",c,[...e[0]||(e[0]=[a("p",{class:"welcome-text"}," La page Domaines est en cours de création. Veuillez patienter. ",-1)])])}const l=t(n,[["render",r],["__scopeId","data-v-98020b01"]]);export{l as default};
