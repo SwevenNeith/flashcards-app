@@ -11,6 +11,8 @@ const pageTitle = computed(() => {
       return 'Accueil'
     case 'domaines':
       return 'Domaines'
+    case 'categories':
+      return 'Catégories'
     default:
       return 'Flashcards'
   }

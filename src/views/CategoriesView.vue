@@ -1,33 +1,33 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useDomainesStore } from '../stores/domaines'
-import DomaineForm from '../components/DomaineForm.vue'
+import { useCategoriesStore } from '../stores/categories'
+import CategoryForm from '../components/CategoryForm.vue'
 
 const router = useRouter()
-const domainesStore = useDomainesStore()
+const categoriesStore = useCategoriesStore()
 const searchQuery = ref('')
-const isAddingDomaine = ref(false)
+const isAddingCategory = ref(false)
 const isEditMode = ref(false)
-const editingDomaine = ref(null)
+const editingCategory = ref(null)
 const selectedLetter = ref(null)
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 
 onMounted(async () => {
-  await domainesStore.fetchDomaines()
+  await categoriesStore.fetchCategories()
 })
 
 const normalizeText = (text) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
 }
 
-const filteredDomaines = computed(() => {
-  let list = domainesStore.domaines
+const filteredCategories = computed(() => {
+  let list = categoriesStore.categories
   
   // Filtre par lettre
   if (selectedLetter.value) {
-    list = list.filter(d => {
-      const firstChar = normalizeText(d.name.charAt(0))
+    list = list.filter(c => {
+      const firstChar = normalizeText(c.name.charAt(0))
       return firstChar === selectedLetter.value.toLowerCase()
     })
   }
@@ -35,9 +35,9 @@ const filteredDomaines = computed(() => {
   // Filtre par recherche texte
   const query = searchQuery.value.toLowerCase().trim()
   if (query) {
-    list = list.filter(d => {
-      const name = String(d.name || '')
-      const desc = String(d.description || '')
+    list = list.filter(c => {
+      const name = String(c.name || '')
+      const desc = String(c.description || '')
       return name.toLowerCase().includes(query) || 
              desc.toLowerCase().includes(query)
     })
@@ -55,46 +55,47 @@ const toggleLetter = (letter) => {
 }
 
 const toggleAddForm = () => {
-  isAddingDomaine.value = !isAddingDomaine.value
-  if (isAddingDomaine.value) {
+  isAddingCategory.value = !isAddingCategory.value
+  if (isAddingCategory.value) {
     isEditMode.value = false
-    editingDomaine.value = null
+    editingCategory.value = null
   }
 }
 
 const toggleEditMode = () => {
   isEditMode.value = !isEditMode.value
-  if (isEditMode.value) isAddingDomaine.value = false
+  if (isEditMode.value) isAddingCategory.value = false
 }
 
-const handleCardClick = (domaine) => {
+const handleCardClick = (category) => {
   if (isEditMode.value) {
-    editingDomaine.value = domaine
-    isAddingDomaine.value = true
+    editingCategory.value = category
+    isAddingCategory.value = true
   } else {
-    router.push('/categories')
+    // Prochaine étape: naviguer vers les flashcards ?
+    console.log('Catégorie cliquée:', category.name)
   }
 }
 
-const handleAddDomaine = async (domainData) => {
-  if (editingDomaine.value) {
-    await domainesStore.updateDomaine(editingDomaine.value.name, domainData)
+const handleAddCategory = async (categoryData) => {
+  if (editingCategory.value) {
+    await categoriesStore.updateCategory(editingCategory.value.name, categoryData)
   } else {
-    await domainesStore.addDomaine(domainData)
+    await categoriesStore.addCategory(categoryData)
   }
-  isAddingDomaine.value = false
-  editingDomaine.value = null
+  isAddingCategory.value = false
+  editingCategory.value = null
 }
 </script>
 
 <template>
-  <main class="domaines-container">
+  <main class="categories-container">
     <div class="controls">
       <div class="search-wrapper">
         <input 
           v-model="searchQuery" 
           type="text" 
-          placeholder="Rechercher un domaine..." 
+          placeholder="Rechercher une catégorie..." 
           class="search-input"
         />
         <svg v-if="!searchQuery" class="search-icon" viewBox="0 0 24 24" width="20" height="20">
@@ -103,8 +104,8 @@ const handleAddDomaine = async (domainData) => {
       </div>
 
       <div class="action-buttons">
-        <button @click="toggleAddForm" class="add-button" :class="{ active: isAddingDomaine }">
-          Ajouter un Domaine
+        <button @click="toggleAddForm" class="add-button" :class="{ active: isAddingCategory }">
+          Ajouter une Catégorie
         </button>
         <button 
           @click="toggleEditMode" 
@@ -139,44 +140,43 @@ const handleAddDomaine = async (domainData) => {
     </div>
 
     <transition name="fade">
-      <DomaineForm 
-        v-if="isAddingDomaine" 
-        :initial-data="editingDomaine"
-        @close="isAddingDomaine = false; editingDomaine = null" 
-        @submit="handleAddDomaine"
+      <CategoryForm 
+        v-if="isAddingCategory" 
+        :initial-data="editingCategory"
+        @close="isAddingCategory = false; editingCategory = null" 
+        @submit="handleAddCategory"
       />
     </transition>
 
-
-    <div class="domaines-list">
-      <div v-if="filteredDomaines.length === 0" class="empty-state">
-        <p v-if="searchQuery">Aucun domaine ne correspond à votre recherche.</p>
-        <p v-else>Bienvenue ! Commencez par ajouter votre premier domaine.</p>
+    <div class="categories-list">
+      <div v-if="filteredCategories.length === 0" class="empty-state">
+        <p v-if="searchQuery">Aucune catégorie ne correspond à votre recherche.</p>
+        <p v-else>Prêt à organiser vos flashcards ? Ajoutez une catégorie !</p>
       </div>
       <div 
-        v-for="domaine in filteredDomaines" 
-        :key="domaine.name" 
-        class="domaine-card"
-        @click="handleCardClick(domaine)"
+        v-for="category in filteredCategories" 
+        :key="category.name" 
+        class="category-card"
+        @click="handleCardClick(category)"
       >
-        <div class="domaine-content">
+        <div class="category-content">
           <transition name="fade">
             <button 
               v-if="isEditMode" 
               class="inline-delete-btn" 
-              @click.stop="domainesStore.deleteDomaine(domaine.name)"
+              @click.stop="categoriesStore.deleteCategory(category.name)"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />
               </svg>
             </button>
           </transition>
-          <div v-if="domaine.icon" class="domaine-icon">
-            <img :src="domaine.icon" alt="Icon" />
+          <div v-if="category.icon" class="category-icon">
+            <img :src="category.icon" alt="Icon" />
           </div>
-          <div class="domaine-info">
-            <h3 class="domaine-name">{{ domaine.name }}</h3>
-            <p v-if="domaine.description" class="domaine-desc">{{ domaine.description }}</p>
+          <div class="category-info">
+            <h3 class="category-name">{{ category.name }}</h3>
+            <p v-if="category.description" class="category-desc">{{ category.description }}</p>
           </div>
         </div>
         
@@ -191,7 +191,7 @@ const handleAddDomaine = async (domainData) => {
 </template>
 
 <style scoped>
-.domaines-container {
+.categories-container {
   padding: 1.5rem 1rem;
   max-width: 800px;
   margin: 0 auto;
@@ -207,12 +207,6 @@ const handleAddDomaine = async (domainData) => {
 
 .search-wrapper {
   position: relative;
-  width: 100%;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.75rem;
   width: 100%;
 }
 
@@ -239,17 +233,61 @@ const handleAddDomaine = async (domainData) => {
   color: #aaa;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.add-button {
+  flex: 1;
+  background-color: #048B9A;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s;
+}
+
+.add-button.active {
+  background-color: #2c3e50;
+}
+
+.edit-toggle-btn {
+  background-color: #f1f2f6;
+  color: #ffa502;
+  border: 1px solid #eee;
+  padding: 0.75rem;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.edit-toggle-btn:hover {
+  background-color: #fff4e5;
+}
+
+.edit-toggle-btn.active {
+  background-color: #ffa502;
+  color: white;
+  border-color: #ffa502;
+}
+
 .alphabet-filter {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 0;
-  margin-bottom: 0.5rem;
 }
 
 .letter-btn {
-  flex-shrink: 0;
   width: 28px;
   height: 28px;
   display: flex;
@@ -273,64 +311,21 @@ const handleAddDomaine = async (domainData) => {
 .letter-btn:hover {
   border-color: #048B9A;
   color: #048B9A;
-  background-color: #f0f7f8;
 }
 
 .letter-btn.active {
   background-color: #048B9A;
   color: white;
   border-color: #048B9A;
-  box-shadow: 0 4px 10px rgba(4, 139, 154, 0.2);
 }
 
-.add-button {
-  flex: 1;
-  background-color: #048B9A;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.25rem;
-  border-radius: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.2s, transform 0.1s;
-}
-
-
-.add-button.active {
-  background-color: #2c3e50;
-}
-
-.edit-toggle-btn {
-  background-color: #f1f2f6;
-  color: #ffa502; /* Orange */
-  border: 1px solid #eee;
-  padding: 0.75rem;
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.edit-toggle-btn:hover {
-  background-color: #fff4e5;
-}
-
-.edit-toggle-btn.active {
-  background-color: #ffa502;
-  color: white;
-  border-color: #ffa502;
-}
-
-.domaines-list {
+.categories-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.domaine-card {
+.category-card {
   background: white;
   padding: 1rem 1.25rem;
   border-radius: 16px;
@@ -343,12 +338,12 @@ const handleAddDomaine = async (domainData) => {
   transition: all 0.2s;
 }
 
-.domaine-card:hover {
+.category-card:hover {
   transform: translateX(4px);
   border-color: #048B9A;
 }
 
-.domaine-content {
+.category-content {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -367,30 +362,26 @@ const handleAddDomaine = async (domainData) => {
   border-radius: 8px;
 }
 
-.inline-delete-btn:hover {
-  background-color: #fff1f2;
-}
-
-.domaine-icon {
+.category-icon {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
 }
 
-.domaine-icon img {
+.category-icon img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 8px;
 }
 
-.domaine-name {
+.category-name {
   margin: 0;
   font-size: 1.1rem;
   color: #2c3e50;
 }
 
-.domaine-desc {
+.category-desc {
   margin: 0.1rem 0 0 0;
   font-size: 0.85rem;
   color: #888;
@@ -405,7 +396,6 @@ const handleAddDomaine = async (domainData) => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-left: 1rem;
 }
 
 .chevron-icon {
@@ -418,21 +408,6 @@ const handleAddDomaine = async (domainData) => {
   color: #aaa;
 }
 
-@media (max-width: 600px) {
-  .controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.slide-enter-active, .slide-leave-active {
-  transition: all 0.3s ease;
-}
-.slide-enter-from, .slide-leave-to {
-  opacity: 0;
-  transform: translateY(-20px);
-}
-
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.2s;
 }
@@ -440,6 +415,3 @@ const handleAddDomaine = async (domainData) => {
   opacity: 0;
 }
 </style>
-
-
-

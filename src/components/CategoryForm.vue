@@ -87,19 +87,19 @@ const handleSubmit = () => {
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-card">
       <header class="form-header">
-        <h2>{{ initialData ? 'Modifier le Domaine' : 'Nouveau Domaine' }}</h2>
+        <h2>{{ initialData ? 'Modifier la Catégorie' : 'Nouvelle Catégorie' }}</h2>
         <button type="button" class="close-x" @click="$emit('close')">&times;</button>
       </header>
 
-      <form @submit.prevent="handleSubmit" class="domaine-form">
+      <form @submit.prevent="handleSubmit" class="category-form">
         <div class="form-group">
-          <label for="name">Nom du Domaine</label>
+          <label for="name">Nom de la catégorie</label>
           <input 
             id="name"
             ref="nameInput"
             v-model="name" 
             type="text" 
-            placeholder="Ex: Informatique, Langues..." 
+            placeholder="Ex: Verbes, Vocabulaire..." 
             required
           />
         </div>
@@ -109,7 +109,7 @@ const handleSubmit = () => {
           <textarea 
             id="description"
             v-model="description" 
-            placeholder="De quoi s'agit-il ?"
+            placeholder="De quoi parle cette catégorie ?"
             rows="3"
           ></textarea>
         </div>
@@ -139,7 +139,7 @@ const handleSubmit = () => {
 
         <div class="form-actions">
           <button type="button" class="cancel-btn" @click="$emit('close')">Annuler</button>
-          <button type="submit" class="submit-btn" :disabled="!name.trim()">Valider</button>
+          <button type="submit" class="submit-btn">Valider</button>
         </div>
       </form>
     </div>
@@ -201,7 +201,7 @@ const handleSubmit = () => {
   line-height: 1;
 }
 
-.domaine-form {
+.category-form {
   padding: 1.5rem;
 }
 
@@ -322,10 +322,5 @@ textarea:focus {
 
 .submit-btn:hover {
   background-color: #037380;
-}
-
-.submit-btn:disabled {
-  background: #a4d2d8;
-  cursor: not-allowed;
 }
 </style>
