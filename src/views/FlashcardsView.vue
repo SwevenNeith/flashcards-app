@@ -184,7 +184,11 @@ const handleAddFlashcard = async (flashcardData) => {
           </div>
           <div class="flashcard-info">
             <h3 class="flashcard-name">{{ flashcard.name }}</h3>
-            <p v-if="flashcard.description" class="flashcard-desc">{{ flashcard.description }}</p>
+            <div 
+              v-if="flashcard.description" 
+              class="flashcard-desc" 
+              v-html="flashcard.description"
+            ></div>
           </div>
         </div>
         
@@ -393,12 +397,14 @@ const handleAddFlashcard = async (flashcardData) => {
   margin: 0.1rem 0 0 0;
   font-size: 0.85rem;
   color: #888;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  word-break: break-all;
 }
+
+/* Styles for rich text elements within the card */
+.flashcard-desc b, .flashcard-desc strong { font-weight: bold; }
+.flashcard-desc i, .flashcard-desc em { font-style: italic; }
+.flashcard-desc u { text-decoration: underline; }
+.flashcard-desc s, .flashcard-desc strike { text-decoration: line-through; }
 
 .actions {
   display: flex;

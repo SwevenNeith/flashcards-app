@@ -14,6 +14,15 @@ const name = ref('')
 const description = ref('')
 const iconUrl = ref('')
 const nameInput = ref(null)
+const editorRef = ref(null)
+const activeFormats = ref({ bold: false, italic: false, underline: false, strikeThrough: false })
+
+const updateActiveFormats = () => {
+  activeFormats.value.bold = document.queryCommandState('bold')
+  activeFormats.value.italic = document.queryCommandState('italic')
+  activeFormats.value.underline = document.queryCommandState('underline')
+  activeFormats.value.strikeThrough = document.queryCommandState('strikeThrough')
+}
 
 onMounted(() => {
   if (props.initialData) {
@@ -25,6 +34,9 @@ onMounted(() => {
   nextTick(() => {
     if (nameInput.value) {
       nameInput.value.focus()
+    }
+    if (editorRef.value) {
+      editorRef.value.innerHTML = description.value
     }
   })
 })
@@ -71,13 +83,24 @@ const handleFileChange = async (event) => {
   reader.readAsDataURL(file)
 }
 
+const format = (command) => {
+  document.execCommand(command, false, null)
+  updateActiveFormats()
+  updateDescription({ target: editorRef.value })
+}
+
+const updateDescription = (e) => {
+  description.value = e.target.innerHTML
+  updateActiveFormats()
+}
+
 const handleSubmit = () => {
   const trimmedName = name.value.trim()
   if (!trimmedName) return
   
   emit('submit', {
     name: trimmedName,
-    description: description.value.trim(),
+    description: description.value,
     icon: iconUrl.value
   })
 }
@@ -105,13 +128,24 @@ const handleSubmit = () => {
         </div>
 
         <div class="form-group">
-          <label for="description">Description / Contenu (optionnel)</label>
-          <textarea 
-            id="description"
-            v-model="description" 
-            placeholder="Que contient cette carte ?"
-            rows="3"
-          ></textarea>
+          <label>Description / Contenu (optionnel)</label>
+          <div class="rich-editor-wrapper">
+            <div class="toolbar">
+              <button type="button" class="tool-btn" :class="{ active: activeFormats.bold }" @mousedown.prevent="format('bold')" title="Gras"><b>G</b></button>
+              <button type="button" class="tool-btn" :class="{ active: activeFormats.italic }" @mousedown.prevent="format('italic')" title="Italique"><i>I</i></button>
+              <button type="button" class="tool-btn" :class="{ active: activeFormats.underline }" @mousedown.prevent="format('underline')" title="Souligné"><u>S</u></button>
+              <button type="button" class="tool-btn" :class="{ active: activeFormats.strikeThrough }" @mousedown.prevent="format('strikeThrough')" title="Barré"><s>B</s></button>
+            </div>
+            <div 
+              ref="editorRef"
+              class="rich-editor" 
+              contenteditable="true" 
+              @input="updateDescription"
+              @keyup="updateActiveFormats"
+              @mouseup="updateActiveFormats"
+              placeholder="Que contient cette carte ?"
+            ></div>
+          </div>
         </div>
 
         <div class="form-group">
@@ -217,8 +251,7 @@ const handleSubmit = () => {
   font-size: 0.9rem;
 }
 
-input[type="text"],
-textarea {
+input[type="text"] {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
@@ -227,11 +260,73 @@ textarea {
   transition: border-color 0.2s;
 }
 
-input[type="text"]:focus,
-textarea:focus {
+input[type="text"]:focus {
   outline: none;
   border-color: #048B9A;
 }
+
+/* Rich Editor Styles */
+.rich-editor-wrapper {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: white;
+}
+
+.toolbar {
+  display: flex;
+  background-color: #f8f9fa;
+  padding: 0.5rem;
+  border-bottom: 1px solid #ddd;
+  gap: 0.5rem;
+}
+
+.tool-btn {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  transition: all 0.2s;
+}
+
+.tool-btn:hover {
+  border-color: #048B9A;
+  color: #048B9A;
+  background-color: #f0f7f8;
+}
+
+.tool-btn.active {
+  background-color: #048B9A;
+  color: white;
+  border-color: #037380;
+}
+
+.rich-editor {
+  min-height: 100px;
+  max-height: 250px;
+  padding: 0.75rem;
+  overflow-y: auto;
+  font-size: 1rem;
+  outline: none;
+}
+
+.rich-editor[contenteditable]:empty:before {
+  content: attr(placeholder);
+  color: #aaa;
+  font-style: italic;
+}
+
+/* Ensure browser default formatting is honoured inside the editor */
+.rich-editor b,
+.rich-editor strong { font-weight: bold !important; }
+.rich-editor i,
+.rich-editor em { font-style: italic !important; }
+.rich-editor u { text-decoration: underline !important; }
+.rich-editor s,
+.rich-editor strike { text-decoration: line-through !important; }
 
 .icon-upload-container {
   border: 2px dashed #ddd;
