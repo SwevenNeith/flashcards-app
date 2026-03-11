@@ -78,85 +78,122 @@ const handleFileChange = (event) => {
 </script>
 
 <template>
-  <div class="inline-form-card">
-    <header class="form-header">
-      <h2>Nouveau Domaine</h2>
-    </header>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal-card">
+      <header class="form-header">
+        <h2>Nouveau Domaine</h2>
+        <button type="button" class="close-x" @click="$emit('close')">&times;</button>
+      </header>
 
-    <form @submit.prevent="handleSubmit" class="domaine-form">
-      <div class="form-group">
-        <label for="name">Nom du Domaine*</label>
-        <input 
-          id="name" 
-          ref="nameInput"
-          v-model="name" 
-          type="text" 
-          placeholder="Ex: Informatique, Langues..." 
-          required 
-        />
-      </div>
-
-      <div class="form-group">
-        <label for="description">Description (Optionnel)</label>
-        <textarea 
-          id="description" 
-          v-model="description" 
-          placeholder="De quoi s'agit-il ?" 
-          rows="2"
-        ></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Icône / Image (Optionnel)</label>
-        <div class="icon-upload">
-          <div v-if="iconUrl" class="icon-preview">
-            <img :src="iconUrl" alt="Aperçu icône" />
-            <button type="button" class="remove-icon" @click="iconUrl = ''">Supprimer</button>
-          </div>
-          <label v-else class="upload-placeholder">
-            <input type="file" accept="image/*" @change="handleFileChange" hidden />
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
-            </svg>
-            <span>Choisir une image</span>
-          </label>
+      <form @submit.prevent="handleSubmit" class="domaine-form">
+        <div class="form-group">
+          <label for="name">Nom du Domaine*</label>
+          <input 
+            id="name" 
+            ref="nameInput"
+            v-model="name" 
+            type="text" 
+            placeholder="Ex: Informatique, Langues..." 
+            required 
+          />
         </div>
-      </div>
 
-      <div class="form-actions">
-        <button type="button" class="btn-cancel" @click="$emit('close')">Annuler</button>
-        <button type="submit" class="btn-submit" :disabled="!name.trim()">Valider</button>
-      </div>
-    </form>
+        <div class="form-group">
+          <label for="description">Description (Optionnel)</label>
+          <textarea 
+            id="description" 
+            v-model="description" 
+            placeholder="De quoi s'agit-il ?" 
+            rows="2"
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Icône / Image (Optionnel)</label>
+          <div class="icon-upload">
+            <div v-if="iconUrl" class="icon-preview">
+              <img :src="iconUrl" alt="Aperçu icône" />
+              <button type="button" class="remove-icon" @click="iconUrl = ''">Supprimer</button>
+            </div>
+            <label v-else class="upload-placeholder">
+              <input type="file" accept="image/*" @change="handleFileChange" hidden />
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+              </svg>
+              <span>Choisir une image</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" @click="$emit('close')">Annuler</button>
+          <button type="submit" class="btn-submit" :disabled="!name.trim()">Valider</button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.inline-form-card {
-  background: white;
-  border-radius: 16px;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e0e0e0;
-  overflow: hidden;
-  animation: slide-down 0.3s ease-out;
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
 }
 
-@keyframes slide-down {
-  from { transform: translateY(-10px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.modal-card {
+  background: white;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  animation: modal-in 0.3s ease-out;
+}
+
+@keyframes modal-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .form-header {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   background-color: #f8f9fa;
   border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .form-header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   color: #2c3e50;
+  font-weight: 600;
+}
+
+.close-x {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #aaa;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.close-x:hover {
+  color: #ff4757;
 }
 
 .domaine-form {
@@ -164,87 +201,92 @@ const handleFileChange = (event) => {
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 0.4rem;
-  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
   color: #2c3e50;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .form-group input[type="text"],
 .form-group textarea {
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 0.95rem;
+  border-radius: 12px;
+  font-size: 1rem;
   outline: none;
+  transition: border-color 0.2s;
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
   border-color: #048B9A;
-  box-shadow: 0 0 0 2px rgba(4, 139, 154, 0.1);
+  box-shadow: 0 0 0 3px rgba(4, 139, 154, 0.1);
 }
 
 .icon-upload {
-  border: 2px dashed #eee;
-  border-radius: 12px;
-  padding: 0.75rem;
+  border: 2px dashed #e0e0e0;
+  border-radius: 16px;
+  padding: 1rem;
   text-align: center;
+  transition: border-color 0.2s;
 }
 
 .upload-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   cursor: pointer;
-  color: #888;
-  font-size: 0.85rem;
+  color: #777;
+  font-size: 0.9rem;
 }
 
 .icon-preview {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .icon-preview img {
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .remove-icon {
   background: #ff4757;
   color: white;
   border: none;
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .form-actions {
   display: flex;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
 }
 
 .form-actions button {
   flex: 1;
-  padding: 0.65rem;
-  border-radius: 8px;
+  padding: 0.8rem;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  transition: all 0.2s;
 }
 
 .btn-cancel {
@@ -253,15 +295,25 @@ const handleFileChange = (event) => {
   color: #2c3e50;
 }
 
+.btn-cancel:hover {
+  background: #e1e2e6;
+}
+
 .btn-submit {
   background: #048B9A;
   border: none;
   color: white;
 }
 
+.btn-submit:hover {
+  background: #037a88;
+  transform: translateY(-1px);
+}
+
 .btn-submit:disabled {
   background: #a4d2d8;
   cursor: not-allowed;
+  transform: none;
 }
 </style>
 
