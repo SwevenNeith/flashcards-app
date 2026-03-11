@@ -12,7 +12,7 @@ const pageTitle = computed(() => {
     case 'domaines':
       return 'Domaines'
     case 'categories':
-      return 'Catégories'
+      return route.params.domainName || 'Catégories'
     default:
       return 'Flashcards'
   }

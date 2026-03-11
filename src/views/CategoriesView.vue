@@ -1,10 +1,18 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useCategoriesStore } from '../stores/categories'
 import CategoryForm from '../components/CategoryForm.vue'
 
+const props = defineProps({
+  domainName: {
+    type: String,
+    required: true
+  }
+})
+
 const router = useRouter()
+const route = useRoute()
 const categoriesStore = useCategoriesStore()
 const searchQuery = ref('')
 const isAddingCategory = ref(false)
@@ -14,7 +22,7 @@ const selectedLetter = ref(null)
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 
 onMounted(async () => {
-  await categoriesStore.fetchCategories()
+  await categoriesStore.fetchCategories(props.domainName)
 })
 
 const normalizeText = (text) => {
@@ -72,16 +80,16 @@ const handleCardClick = (category) => {
     editingCategory.value = category
     isAddingCategory.value = true
   } else {
-    // Prochaine étape: naviguer vers les flashcards ?
+    // Prochaine étape: naviguer vers les flashcards
     console.log('Catégorie cliquée:', category.name)
   }
 }
 
 const handleAddCategory = async (categoryData) => {
   if (editingCategory.value) {
-    await categoriesStore.updateCategory(editingCategory.value.name, categoryData)
+    await categoriesStore.updateCategory(editingCategory.value.name, categoryData, props.domainName)
   } else {
-    await categoriesStore.addCategory(categoryData)
+    await categoriesStore.addCategory(categoryData, props.domainName)
   }
   isAddingCategory.value = false
   editingCategory.value = null
@@ -164,7 +172,7 @@ const handleAddCategory = async (categoryData) => {
             <button 
               v-if="isEditMode" 
               class="inline-delete-btn" 
-              @click.stop="categoriesStore.deleteCategory(category.name)"
+              @click.stop="categoriesStore.deleteCategory(category.name, props.domainName)"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />

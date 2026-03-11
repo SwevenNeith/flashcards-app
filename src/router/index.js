@@ -16,9 +16,10 @@ const router = createRouter({
       component: () => import('../views/DomainesView.vue')
     },
     {
-      path: '/categories',
+      path: '/categories/:domainName',
       name: 'categories',
-      component: () => import('../views/CategoriesView.vue')
+      component: () => import('../views/CategoriesView.vue'),
+      props: true
     }
 
   ]

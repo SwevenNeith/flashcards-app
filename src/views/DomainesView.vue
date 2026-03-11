@@ -72,7 +72,7 @@ const handleCardClick = (domaine) => {
     editingDomaine.value = domaine
     isAddingDomaine.value = true
   } else {
-    router.push('/categories')
+    router.push({ name: 'categories', params: { domainName: domaine.name } })
   }
 }
 
