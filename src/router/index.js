@@ -20,6 +20,12 @@ const router = createRouter({
       name: 'categories',
       component: () => import('../views/CategoriesView.vue'),
       props: true
+    },
+    {
+      path: '/flashcards/:categoryName',
+      name: 'flashcards',
+      component: () => import('../views/FlashcardsView.vue'),
+      props: true
     }
 
   ]

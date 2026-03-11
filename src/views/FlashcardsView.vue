@@ -1,11 +1,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useCategoriesStore } from '../stores/categories'
-import CategoryForm from '../components/CategoryForm.vue'
+import { useFlashcardsStore } from '../stores/flashcards'
+import FlashcardForm from '../components/FlashcardForm.vue'
 
 const props = defineProps({
-  domainName: {
+  categoryName: {
     type: String,
     required: true
   }
@@ -13,29 +13,29 @@ const props = defineProps({
 
 const router = useRouter()
 const route = useRoute()
-const categoriesStore = useCategoriesStore()
+const flashcardsStore = useFlashcardsStore()
 const searchQuery = ref('')
-const isAddingCategory = ref(false)
+const isAddingFlashcard = ref(false)
 const isEditMode = ref(false)
-const editingCategory = ref(null)
+const editingFlashcard = ref(null)
 const selectedLetter = ref(null)
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 
 onMounted(async () => {
-  await categoriesStore.fetchCategories(props.domainName)
+  await flashcardsStore.fetchFlashcards(props.categoryName)
 })
 
 const normalizeText = (text) => {
   return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
 }
 
-const filteredCategories = computed(() => {
-  let list = categoriesStore.categories
+const filteredFlashcards = computed(() => {
+  let list = flashcardsStore.flashcards
   
   // Filtre par lettre
   if (selectedLetter.value) {
-    list = list.filter(c => {
-      const firstChar = normalizeText(c.name.charAt(0))
+    list = list.filter(f => {
+      const firstChar = normalizeText(f.name.charAt(0))
       return firstChar === selectedLetter.value.toLowerCase()
     })
   }
@@ -43,9 +43,9 @@ const filteredCategories = computed(() => {
   // Filtre par recherche texte
   const query = searchQuery.value.toLowerCase().trim()
   if (query) {
-    list = list.filter(c => {
-      const name = String(c.name || '')
-      const desc = String(c.description || '')
+    list = list.filter(f => {
+      const name = String(f.name || '')
+      const desc = String(f.description || '')
       return name.toLowerCase().includes(query) || 
              desc.toLowerCase().includes(query)
     })
@@ -63,46 +63,47 @@ const toggleLetter = (letter) => {
 }
 
 const toggleAddForm = () => {
-  isAddingCategory.value = !isAddingCategory.value
-  if (isAddingCategory.value) {
+  isAddingFlashcard.value = !isAddingFlashcard.value
+  if (isAddingFlashcard.value) {
     isEditMode.value = false
-    editingCategory.value = null
+    editingFlashcard.value = null
   }
 }
 
 const toggleEditMode = () => {
   isEditMode.value = !isEditMode.value
-  if (isEditMode.value) isAddingCategory.value = false
+  if (isEditMode.value) isAddingFlashcard.value = false
 }
 
-const handleCardClick = (category) => {
+const handleCardClick = (flashcard) => {
   if (isEditMode.value) {
-    editingCategory.value = category
-    isAddingCategory.value = true
+    editingFlashcard.value = flashcard
+    isAddingFlashcard.value = true
   } else {
-    router.push({ name: 'flashcards', params: { categoryName: category.name } })
+    // Prochaine étape: vue détaillée de la flashcard ?
+    console.log('Flashcard cliquée:', flashcard.name)
   }
 }
 
-const handleAddCategory = async (categoryData) => {
-  if (editingCategory.value) {
-    await categoriesStore.updateCategory(editingCategory.value.name, categoryData, props.domainName)
+const handleAddFlashcard = async (flashcardData) => {
+  if (editingFlashcard.value) {
+    await flashcardsStore.updateFlashcard(editingFlashcard.value.name, flashcardData, props.categoryName)
   } else {
-    await categoriesStore.addCategory(categoryData, props.domainName)
+    await flashcardsStore.addFlashcard(flashcardData, props.categoryName)
   }
-  isAddingCategory.value = false
-  editingCategory.value = null
+  isAddingFlashcard.value = false
+  editingFlashcard.value = null
 }
 </script>
 
 <template>
-  <main class="categories-container">
+  <main class="flashcards-container">
     <div class="controls">
       <div class="search-wrapper">
         <input 
           v-model="searchQuery" 
           type="text" 
-          placeholder="Rechercher une catégorie..." 
+          placeholder="Rechercher une flashcard..." 
           class="search-input"
         />
         <svg v-if="!searchQuery" class="search-icon" viewBox="0 0 24 24" width="20" height="20">
@@ -111,8 +112,8 @@ const handleAddCategory = async (categoryData) => {
       </div>
 
       <div class="action-buttons">
-        <button @click="toggleAddForm" class="add-button" :class="{ active: isAddingCategory }">
-          Ajouter une Catégorie
+        <button @click="toggleAddForm" class="add-button" :class="{ active: isAddingFlashcard }">
+          Ajouter une Flashcard
         </button>
         <button 
           @click="toggleEditMode" 
@@ -147,43 +148,43 @@ const handleAddCategory = async (categoryData) => {
     </div>
 
     <transition name="fade">
-      <CategoryForm 
-        v-if="isAddingCategory" 
-        :initial-data="editingCategory"
-        @close="isAddingCategory = false; editingCategory = null" 
-        @submit="handleAddCategory"
+      <FlashcardForm 
+        v-if="isAddingFlashcard" 
+        :initial-data="editingFlashcard"
+        @close="isAddingFlashcard = false; editingFlashcard = null" 
+        @submit="handleAddFlashcard"
       />
     </transition>
 
-    <div class="categories-list">
-      <div v-if="filteredCategories.length === 0" class="empty-state">
-        <p v-if="searchQuery">Aucune catégorie ne correspond à votre recherche.</p>
-        <p v-else>Prêt à organiser vos flashcards ? Ajoutez une catégorie !</p>
+    <div class="flashcards-list">
+      <div v-if="filteredFlashcards.length === 0" class="empty-state">
+        <p v-if="searchQuery">Aucune flashcard ne correspond à votre recherche.</p>
+        <p v-else>C'est ici que vous apprendrez ! Ajoutez votre première flashcard.</p>
       </div>
       <div 
-        v-for="category in filteredCategories" 
-        :key="category.name" 
-        class="category-card"
-        @click="handleCardClick(category)"
+        v-for="flashcard in filteredFlashcards" 
+        :key="flashcard.name" 
+        class="flashcard-card"
+        @click="handleCardClick(flashcard)"
       >
-        <div class="category-content">
+        <div class="flashcard-content">
           <transition name="fade">
             <button 
               v-if="isEditMode" 
               class="inline-delete-btn" 
-              @click.stop="categoriesStore.deleteCategory(category.name, props.domainName)"
+              @click.stop="flashcardsStore.deleteFlashcard(flashcard.name, props.categoryName)"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />
               </svg>
             </button>
           </transition>
-          <div v-if="category.icon" class="category-icon">
-            <img :src="category.icon" alt="Icon" />
+          <div v-if="flashcard.icon" class="flashcard-icon">
+            <img :src="flashcard.icon" alt="Icon" />
           </div>
-          <div class="category-info">
-            <h3 class="category-name">{{ category.name }}</h3>
-            <p v-if="category.description" class="category-desc">{{ category.description }}</p>
+          <div class="flashcard-info">
+            <h3 class="flashcard-name">{{ flashcard.name }}</h3>
+            <p v-if="flashcard.description" class="flashcard-desc">{{ flashcard.description }}</p>
           </div>
         </div>
         
@@ -198,7 +199,7 @@ const handleAddCategory = async (categoryData) => {
 </template>
 
 <style scoped>
-.categories-container {
+.flashcards-container {
   padding: 1.5rem 1rem;
   max-width: 800px;
   margin: 0 auto;
@@ -326,13 +327,13 @@ const handleAddCategory = async (categoryData) => {
   border-color: #048B9A;
 }
 
-.categories-list {
+.flashcards-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.category-card {
+.flashcard-card {
   background: white;
   padding: 1rem 1.25rem;
   border-radius: 16px;
@@ -345,12 +346,12 @@ const handleAddCategory = async (categoryData) => {
   transition: all 0.2s;
 }
 
-.category-card:hover {
+.flashcard-card:hover {
   transform: translateX(4px);
   border-color: #048B9A;
 }
 
-.category-content {
+.flashcard-content {
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -369,26 +370,26 @@ const handleAddCategory = async (categoryData) => {
   border-radius: 8px;
 }
 
-.category-icon {
+.flashcard-icon {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
 }
 
-.category-icon img {
+.flashcard-icon img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   border-radius: 8px;
 }
 
-.category-name {
+.flashcard-name {
   margin: 0;
   font-size: 1.1rem;
   color: #2c3e50;
 }
 
-.category-desc {
+.flashcard-desc {
   margin: 0.1rem 0 0 0;
   font-size: 0.85rem;
   color: #888;

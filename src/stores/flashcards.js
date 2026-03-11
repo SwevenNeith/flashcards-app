@@ -1,34 +1,202 @@
 import { defineStore } from 'pinia'
+import { supabase } from '../lib/supabase'
 
 export const useFlashcardsStore = defineStore('flashcards', {
   state: () => ({
-    cards: [],
+    flashcards: [], // Changé de 'cards' à 'flashcards' pour la cohérence
     loading: false,
     error: null
   }),
   
   actions: {
-    addCard(card) {
-      this.cards.push({
-        id: Date.now(),
-        ...card
-      })
-      this.saveToLocalStorage()
+    async _uploadIcon(base64Data) {
+      if (!base64Data || !base64Data.startsWith('data:')) return null
+      
+      try {
+        const parts = base64Data.split(';base64,')
+        const contentType = parts[0].split(':')[1]
+        const raw = window.atob(parts[1])
+        const rawLength = raw.length
+        const uInt8Array = new Uint8Array(rawLength)
+        for (let i = 0; i < rawLength; ++i) {
+          uInt8Array[i] = raw.charCodeAt(i)
+        }
+        
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        const { data, error } = await supabase.storage
+          .from('flashcard-icon')
+          .upload(fileName, uInt8Array, {
+            contentType,
+            upsert: false
+          })
+
+        if (error) throw error
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('flashcard-icon')
+          .getPublicUrl(data.path)
+          
+        return publicUrl
+      } catch (e) {
+        console.error('Erreur upload Storage Flashcards:', e)
+        return null
+      }
     },
-    
-    deleteCard(id) {
-      this.cards = this.cards.filter(card => card.id !== id)
-      this.saveToLocalStorage()
+
+    async _deleteIcon(url) {
+      if (!url || !url.includes('/public/flashcard-icon/')) {
+        console.log('URL non reconnue comme une icône du bucket flashcard-icon:', url)
+        return
+      }
+      
+      try {
+        const fileName = url.split('/').pop()
+        const { error } = await supabase.storage
+          .from('flashcard-icon')
+          .remove([fileName])
+          
+        if (error) {
+          console.error('Erreur Supabase Storage DELETE Flashcard:', error)
+          throw error
+        }
+      } catch (e) {
+        console.error('Erreur lors de la suppression de l\'icône flashcard:', e)
+      }
     },
-    
-    saveToLocalStorage() {
-      localStorage.setItem('flashcards', JSON.stringify(this.cards))
+
+    async fetchFlashcards(categoryName) {
+      if (!categoryName) return
+      
+      this.loading = true
+      this.error = null
+      try {
+        const { data, error } = await supabase
+          .from('Flashcards')
+          .select('*')
+          .eq('category', categoryName)
+        
+        if (error) throw error
+        this.flashcards = data || []
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la récupération des flashcards:', e)
+      } finally {
+        this.loading = false
+      }
     },
-    
-    loadFromLocalStorage() {
-      const stored = localStorage.getItem('flashcards')
-      if (stored) {
-        this.cards = JSON.parse(stored)
+
+    async addFlashcard(flashcardData, categoryName) {
+      if (!flashcardData.name || !categoryName) return
+      
+      const trimmedName = flashcardData.name.trim()
+      
+      this.loading = true
+      try {
+        let iconUrl = flashcardData.icon
+        
+        if (iconUrl && iconUrl.startsWith('data:')) {
+          const uploadedUrl = await this._uploadIcon(iconUrl)
+          if (uploadedUrl) {
+            iconUrl = uploadedUrl
+          }
+        }
+
+        const { data, error } = await supabase
+          .from('Flashcards')
+          .insert([{
+            name: trimmedName,
+            category: categoryName,
+            description: flashcardData.description || '',
+            icon: iconUrl || null
+          }])
+          .select()
+
+        if (error) throw error
+
+        if (data && data[0]) {
+          this.flashcards.unshift(data[0])
+        }
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de l\'ajout de la flashcard:', e)
+        alert('Erreur lors de l\'ajout : ' + e.message)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async updateFlashcard(oldName, updatedData, categoryName) {
+      if (!updatedData.name || !categoryName) return
+      
+      this.loading = true
+      try {
+        let iconUrl = updatedData.icon
+        
+        if (iconUrl && iconUrl.startsWith('data:')) {
+          const uploadedUrl = await this._uploadIcon(iconUrl)
+          if (uploadedUrl) {
+            iconUrl = uploadedUrl
+          }
+        }
+
+        const { data, error } = await supabase
+          .from('Flashcards')
+          .update({
+            name: updatedData.name.trim(),
+            description: updatedData.description || '',
+            icon: iconUrl || null
+          })
+          .eq('name', oldName)
+          .eq('category', categoryName)
+          .select()
+
+        if (error) throw error
+
+        if (data && data[0]) {
+          const index = this.flashcards.findIndex(f => f.name === oldName)
+          if (index !== -1) {
+            const oldIcon = this.flashcards[index].icon
+            if (oldIcon && oldIcon !== iconUrl) {
+              await this._deleteIcon(oldIcon)
+            }
+            this.flashcards[index] = data[0]
+          }
+        }
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la mise à jour de la flashcard:', e)
+        alert('Erreur lors de la mise à jour : ' + e.message)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteFlashcard(name, categoryName) {
+      if (!categoryName) return
+      
+      this.loading = true
+      try {
+        const flashcardToDelete = this.flashcards.find(f => f.name === name)
+        const oldIcon = flashcardToDelete?.icon
+
+        const { error } = await supabase
+          .from('Flashcards')
+          .delete()
+          .eq('name', name)
+          .eq('category', categoryName)
+
+        if (error) throw error
+        
+        if (oldIcon) {
+          await this._deleteIcon(oldIcon)
+        }
+
+        this.flashcards = this.flashcards.filter(f => f.name !== name)
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la suppression de la flashcard:', e)
+      } finally {
+        this.loading = false
       }
     }
   }
