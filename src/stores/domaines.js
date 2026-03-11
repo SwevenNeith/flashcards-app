@@ -13,7 +13,6 @@ export const useDomainesStore = defineStore('domaines', {
       if (!base64Data || !base64Data.startsWith('data:')) return null
       
       try {
-        // Extraire le type mime et les données base64
         const parts = base64Data.split(';base64,')
         const contentType = parts[0].split(':')[1]
         const raw = window.atob(parts[1])
@@ -41,6 +40,29 @@ export const useDomainesStore = defineStore('domaines', {
       } catch (e) {
         console.error('Erreur upload Storage:', e)
         return null
+      }
+    },
+
+    async _deleteIcon(url) {
+      if (!url || !url.includes('/public/domain-icon/')) {
+        console.log('URL non reconnue comme une icône du bucket:', url)
+        return
+      }
+      
+      try {
+        const fileName = url.split('/').pop()
+        console.log('Tentative de suppression de l\'icône:', fileName)
+        const { error } = await supabase.storage
+          .from('domain-icon')
+          .remove([fileName])
+          
+        if (error) {
+          console.error('Erreur Supabase Storage DELETE:', error)
+          throw error
+        }
+        console.log('Icône supprimée avec succès du bucket')
+      } catch (e) {
+        console.error('Erreur lors de la suppression de l\'icône:', e)
       }
     },
 
@@ -118,15 +140,78 @@ export const useDomainesStore = defineStore('domaines', {
       }
     },
 
+    async updateDomaine(oldName, updatedData) {
+      if (!updatedData.name) return
+      
+      this.loading = true
+      try {
+        let iconUrl = updatedData.icon
+        
+        // Si c'est une nouvelle image base64, on l'upload
+        if (iconUrl && iconUrl.startsWith('data:')) {
+          const uploadedUrl = await this._uploadIcon(iconUrl)
+          if (uploadedUrl) {
+            iconUrl = uploadedUrl
+          }
+        }
+
+        const { data, error } = await supabase
+          .from('Domaines')
+          .update({
+            name: updatedData.name.trim(),
+            description: updatedData.description || '',
+            icon: iconUrl || null
+          })
+          .eq('name', oldName)
+          .select()
+
+        if (error) {
+          if (error.code === '23505') {
+            alert('Un autre domaine avec ce nom existe déjà.')
+          } else {
+            throw error
+          }
+          return
+        }
+
+        if (data && data[0]) {
+          const index = this.domaines.findIndex(d => d.name === oldName)
+          if (index !== -1) {
+            const oldIcon = this.domaines[index].icon
+            // Si l'icône a changé, on supprime l'ancienne
+            if (oldIcon && oldIcon !== iconUrl) {
+              await this._deleteIcon(oldIcon)
+            }
+            this.domaines[index] = data[0]
+          }
+        }
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la mise à jour du domaine:', e)
+        alert('Erreur lors de la mise à jour : ' + e.message)
+      } finally {
+        this.loading = false
+      }
+    },
+
     async deleteDomaine(name) {
       this.loading = true
       try {
+        const domainToDelete = this.domaines.find(d => d.name === name)
+        const oldIcon = domainToDelete?.icon
+
         const { error } = await supabase
           .from('Domaines')
           .delete()
           .eq('name', name)
 
         if (error) throw error
+        
+        // Supprimer l'icône du stockage si elle existe
+        if (oldIcon) {
+          await this._deleteIcon(oldIcon)
+        }
+
         this.domaines = this.domaines.filter(d => d.name !== name)
       } catch (e) {
         this.error = e.message

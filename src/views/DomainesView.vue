@@ -6,7 +6,8 @@ import DomaineForm from '../components/DomaineForm.vue'
 const domainesStore = useDomainesStore()
 const searchQuery = ref('')
 const isAddingDomaine = ref(false)
-const isDeleteMode = ref(false)
+const isEditMode = ref(false)
+const editingDomaine = ref(null)
 const selectedLetter = ref(null)
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
 
@@ -53,17 +54,32 @@ const toggleLetter = (letter) => {
 
 const toggleAddForm = () => {
   isAddingDomaine.value = !isAddingDomaine.value
-  if (isAddingDomaine.value) isDeleteMode.value = false
+  if (isAddingDomaine.value) {
+    isEditMode.value = false
+    editingDomaine.value = null
+  }
 }
 
-const toggleDeleteMode = () => {
-  isDeleteMode.value = !isDeleteMode.value
-  if (isDeleteMode.value) isAddingDomaine.value = false
+const toggleEditMode = () => {
+  isEditMode.value = !isEditMode.value
+  if (isEditMode.value) isAddingDomaine.value = false
 }
 
-const handleAddDomaine = (domainData) => {
-  domainesStore.addDomaine(domainData)
+const handleCardClick = (domaine) => {
+  if (isEditMode.value) {
+    editingDomaine.value = domaine
+    isAddingDomaine.value = true
+  }
+}
+
+const handleAddDomaine = async (domainData) => {
+  if (editingDomaine.value) {
+    await domainesStore.updateDomaine(editingDomaine.value.name, domainData)
+  } else {
+    await domainesStore.addDomaine(domainData)
+  }
   isAddingDomaine.value = false
+  editingDomaine.value = null
 }
 </script>
 
@@ -87,13 +103,13 @@ const handleAddDomaine = (domainData) => {
           Ajouter un Domaine
         </button>
         <button 
-          @click="toggleDeleteMode" 
-          class="delete-toggle-btn"
-          :class="{ active: isDeleteMode }"
-          title="Mode suppression"
+          @click="toggleEditMode" 
+          class="edit-toggle-btn"
+          :class="{ active: isEditMode }"
+          title="Mode édition"
         >
           <svg viewBox="0 0 24 24" width="20" height="20">
-            <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />
+            <path fill="currentColor" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
           </svg>
         </button>
       </div>
@@ -121,7 +137,8 @@ const handleAddDomaine = (domainData) => {
     <transition name="fade">
       <DomaineForm 
         v-if="isAddingDomaine" 
-        @close="isAddingDomaine = false" 
+        :initial-data="editingDomaine"
+        @close="isAddingDomaine = false; editingDomaine = null" 
         @submit="handleAddDomaine"
       />
     </transition>
@@ -132,11 +149,16 @@ const handleAddDomaine = (domainData) => {
         <p v-if="searchQuery">Aucun domaine ne correspond à votre recherche.</p>
         <p v-else>Bienvenue ! Commencez par ajouter votre premier domaine.</p>
       </div>
-      <div v-for="domaine in filteredDomaines" :key="domaine.name" class="domaine-card">
+      <div 
+        v-for="domaine in filteredDomaines" 
+        :key="domaine.name" 
+        class="domaine-card"
+        @click="handleCardClick(domaine)"
+      >
         <div class="domaine-content">
           <transition name="fade">
             <button 
-              v-if="isDeleteMode" 
+              v-if="isEditMode" 
               class="inline-delete-btn" 
               @click.stop="domainesStore.deleteDomaine(domaine.name)"
             >
@@ -275,9 +297,9 @@ const handleAddDomaine = (domainData) => {
   background-color: #2c3e50;
 }
 
-.delete-toggle-btn {
+.edit-toggle-btn {
   background-color: #f1f2f6;
-  color: #ff4757;
+  color: #ffa502; /* Orange */
   border: 1px solid #eee;
   padding: 0.75rem;
   border-radius: 12px;
@@ -288,14 +310,14 @@ const handleAddDomaine = (domainData) => {
   transition: all 0.2s;
 }
 
-.delete-toggle-btn:hover {
-  background-color: #fff1f2;
+.edit-toggle-btn:hover {
+  background-color: #fff4e5;
 }
 
-.delete-toggle-btn.active {
-  background-color: #ff4757;
+.edit-toggle-btn.active {
+  background-color: #ffa502;
   color: white;
-  border-color: #ff4757;
+  border-color: #ffa502;
 }
 
 .domaines-list {

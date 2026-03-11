@@ -1,6 +1,13 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 
+const props = defineProps({
+  initialData: {
+    type: Object,
+    default: null
+  }
+})
+
 const emit = defineEmits(['close', 'submit'])
 
 const name = ref('')
@@ -9,7 +16,12 @@ const iconUrl = ref('')
 const nameInput = ref(null)
 
 onMounted(() => {
-  console.log('DomaineForm monté')
+  if (props.initialData) {
+    name.value = props.initialData.name || ''
+    description.value = props.initialData.description || ''
+    iconUrl.value = props.initialData.icon || ''
+  }
+  
   nextTick(() => {
     if (nameInput.value) {
       nameInput.value.focus()
@@ -81,7 +93,7 @@ const handleFileChange = (event) => {
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-card">
       <header class="form-header">
-        <h2>Nouveau Domaine</h2>
+        <h2>{{ initialData ? 'Modifier le Domaine' : 'Nouveau Domaine' }}</h2>
         <button type="button" class="close-x" @click="$emit('close')">&times;</button>
       </header>
 
