@@ -8,6 +8,10 @@ const searchQuery = ref('')
 const isAddingDomaine = ref(false)
 const isDeleteMode = ref(false)
 
+onMounted(async () => {
+  await domainesStore.fetchDomaines()
+})
+
 const filteredDomaines = computed(() => {
   const query = searchQuery.value.toLowerCase().trim()
   if (!query) return domainesStore.domaines
@@ -80,13 +84,13 @@ const handleAddDomaine = (domainData) => {
         <p v-if="searchQuery">Aucun domaine ne correspond à votre recherche.</p>
         <p v-else>Bienvenue ! Commencez par ajouter votre premier domaine.</p>
       </div>
-      <div v-for="domaine in filteredDomaines" :key="domaine.id" class="domaine-card">
+      <div v-for="domaine in filteredDomaines" :key="domaine.name" class="domaine-card">
         <div class="domaine-content">
           <transition name="fade">
             <button 
               v-if="isDeleteMode" 
               class="inline-delete-btn" 
-              @click.stop="domainesStore.deleteDomaine(domaine.id)"
+              @click.stop="domainesStore.deleteDomaine(domaine.name)"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />

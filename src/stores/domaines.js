@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { supabase } from '../lib/supabase'
 
 export const useDomainesStore = defineStore('domaines', {
   state: () => ({
@@ -8,19 +9,131 @@ export const useDomainesStore = defineStore('domaines', {
   }),
   
   actions: {
-    addDomaine(domainData) {
-      if (!domainData.name) return
-      this.domaines.push({
-        id: Date.now(),
-        name: domainData.name,
-        description: domainData.description || '',
-        icon: domainData.icon || null
-      })
+    async _uploadIcon(base64Data) {
+      if (!base64Data || !base64Data.startsWith('data:')) return null
+      
+      try {
+        // Extraire le type mime et les données base64
+        const parts = base64Data.split(';base64,')
+        const contentType = parts[0].split(':')[1]
+        const raw = window.atob(parts[1])
+        const rawLength = raw.length
+        const uInt8Array = new Uint8Array(rawLength)
+        for (let i = 0; i < rawLength; ++i) {
+          uInt8Array[i] = raw.charCodeAt(i)
+        }
+        
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        const { data, error } = await supabase.storage
+          .from('domain-icon')
+          .upload(fileName, uInt8Array, {
+            contentType,
+            upsert: false
+          })
+
+        if (error) throw error
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('domain-icon')
+          .getPublicUrl(data.path)
+          
+        return publicUrl
+      } catch (e) {
+        console.error('Erreur upload Storage:', e)
+        return null
+      }
     },
 
-    deleteDomaine(id) {
-      this.domaines = this.domaines.filter(d => d.id !== id)
+    async fetchDomaines() {
+      this.loading = true
+      this.error = null
+      try {
+        const { data, error } = await supabase
+          .from('Domaines')
+          .select('*')
+        
+        if (error) throw error
+        this.domaines = data || []
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la récupération des domaines:', e)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async addDomaine(domainData) {
+      if (!domainData.name) return
+      
+      const trimmedName = domainData.name.trim()
+      
+      // Vérifier si le nom existe déjà localement (optimisation)
+      const existing = this.domaines.find(d => d.name.toLowerCase() === trimmedName.toLowerCase())
+      if (existing) {
+        alert('Un domaine avec ce nom existe déjà.')
+        return
+      }
+
+      this.loading = true
+      try {
+        let iconUrl = domainData.icon
+        
+        // Si c'est une image base64, on l'upload d'abord dans le Storage
+        if (iconUrl && iconUrl.startsWith('data:')) {
+          const uploadedUrl = await this._uploadIcon(iconUrl)
+          if (uploadedUrl) {
+            iconUrl = uploadedUrl
+          } else {
+            console.warn('L\'upload de l\'icône a échoué (vérifiez vos politiques RLS), stockage en Base64 à la place.')
+          }
+        }
+
+        const { data, error } = await supabase
+          .from('Domaines')
+          .insert([{
+            name: trimmedName,
+            description: domainData.description || '',
+            icon: iconUrl || null
+          }])
+          .select()
+
+        if (error) {
+          if (error.code === '23505') { // Code Postgres pour violation de contrainte unique
+             alert('Un domaine avec ce nom existe déjà dans la base de données.')
+          } else {
+            throw error
+          }
+          return
+        }
+
+        if (data && data[0]) {
+          this.domaines.unshift(data[0])
+        }
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de l\'ajout du domaine:', e)
+        alert('Erreur lors de l\'ajout du domaine : ' + e.message)
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async deleteDomaine(name) {
+      this.loading = true
+      try {
+        const { error } = await supabase
+          .from('Domaines')
+          .delete()
+          .eq('name', name)
+
+        if (error) throw error
+        this.domaines = this.domaines.filter(d => d.name !== name)
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la suppression du domaine:', e)
+      } finally {
+        this.loading = false
+      }
     }
-  },
-  persist: true
+  }
 })
