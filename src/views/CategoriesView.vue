@@ -30,7 +30,7 @@ const normalizeText = (text) => {
 }
 
 const filteredCategories = computed(() => {
-  let list = categoriesStore.categories
+  let list = [...categoriesStore.categories]
   
   // Filtre par lettre
   if (selectedLetter.value) {
@@ -50,6 +50,15 @@ const filteredCategories = computed(() => {
              desc.toLowerCase().includes(query)
     })
   }
+
+  // Tri alphabétique par nom (en ignorant les accents et la casse)
+  list.sort((a, b) => {
+    const nameA = normalizeText(String(a.name || ''))
+    const nameB = normalizeText(String(b.name || ''))
+    if (nameA < nameB) return -1
+    if (nameA > nameB) return 1
+    return 0
+  })
 
   return list
 })
