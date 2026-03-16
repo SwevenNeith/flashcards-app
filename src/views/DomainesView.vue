@@ -201,7 +201,7 @@ const handleAddDomaine = async (domainData) => {
 
 <style scoped>
 .domaines-container {
-  padding: 1.5rem 1rem;
+  padding: 1.5rem 1rem 5rem 1rem;
   max-width: 800px;
   margin: 0 auto;
   width: 100%;

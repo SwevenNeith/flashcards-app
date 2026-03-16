@@ -335,7 +335,7 @@ const handleAddFlashcard = async (flashcardData) => {
 
 <style scoped>
 .flashcards-container {
-  padding: 1.5rem 1rem;
+  padding: 1.5rem 1rem 5rem 1rem;
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
@@ -533,6 +533,7 @@ const handleAddFlashcard = async (flashcardData) => {
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   word-break: break-word;
 }
@@ -590,7 +591,7 @@ const handleAddFlashcard = async (flashcardData) => {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.18);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .flashcard-nav-btn {
@@ -642,7 +643,6 @@ const handleAddFlashcard = async (flashcardData) => {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  overflow-y: auto;
 }
 
 .flashcard-modal-icon {

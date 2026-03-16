@@ -15,6 +15,17 @@ const pageTitle = computed(() => {
       return route.params.domainName || 'Catégories'
     case 'flashcards':
       return route.params.categoryName || 'Flashcards'
+    case 'test': {
+      const type = route.query.type
+      const domain = route.query.domain
+      const category = route.query.category
+      if (type === 'Catégorie' && domain && category) {
+        return `${domain} / ${category}`
+      } else if (domain) {
+        return `${domain}`
+      }
+      return 'Test'
+    }
     default:
       return 'Flashcards'
   }
@@ -37,6 +48,7 @@ const pageTitle = computed(() => {
   min-height: 100vh;
   width: 100%;
   background-color: #f8f9fa;
+  overflow-x: hidden;
 }
 </style>
 

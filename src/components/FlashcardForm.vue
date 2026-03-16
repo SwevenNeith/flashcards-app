@@ -200,9 +200,10 @@ const handleSubmit = () => {
   background-color: white;
   width: 100%;
   max-width: 500px;
+  max-height: 90vh;
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  overflow: hidden;
+  overflow-y: auto;
   animation: slideUp 0.3s ease-out;
 }
 

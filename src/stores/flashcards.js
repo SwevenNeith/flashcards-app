@@ -198,6 +198,28 @@ export const useFlashcardsStore = defineStore('flashcards', {
       } finally {
         this.loading = false
       }
+    },
+
+    async fetchFlashcardsByCategories(categoryNames) {
+      if (!categoryNames || categoryNames.length === 0) return []
+      
+      this.loading = true
+      this.error = null
+      try {
+        const { data, error } = await supabase
+          .from('Flashcards')
+          .select('*')
+          .in('category', categoryNames)
+        
+        if (error) throw error
+        return data || []
+      } catch (e) {
+        this.error = e.message
+        console.error('Erreur lors de la récupération groupée des flashcards:', e)
+        return []
+      } finally {
+        this.loading = false
+      }
     }
   }
 })
