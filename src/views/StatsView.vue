@@ -56,8 +56,8 @@ onMounted(async () => {
           <tr v-for="stat in stats" :key="stat.id">
             <td class="date-cell">{{ formatDate(stat.date) }}</td>
             <td class="target-cell">
-              <strong>{{ stat.Domaines?.name || 'Inconnu' }}</strong>
-              <span v-if="stat.Categories"> - {{ stat.Categories.name }}</span>
+              <div class="domain-name">{{ stat.Domaines?.name || 'Inconnu' }}</div>
+              <div v-if="stat.Categories" class="category-subname">{{ stat.Categories.name }}</div>
             </td>
             <td class="score-cell">
               <span class="score-badge" :class="{'perfect': stat.score.startsWith(stat.score.split('/')[1])}">
@@ -160,7 +160,19 @@ onMounted(async () => {
 }
 
 .target-cell {
-  line-height: 1.4;
+  line-height: 1.2;
+}
+
+.domain-name {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.category-subname {
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 0.1rem;
 }
 
 .score-badge {
