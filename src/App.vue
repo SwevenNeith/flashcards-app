@@ -26,6 +26,8 @@ const pageTitle = computed(() => {
       }
       return 'Test'
     }
+    case 'statistiques':
+      return 'Statistiques'
     default:
       return 'Flashcards'
   }

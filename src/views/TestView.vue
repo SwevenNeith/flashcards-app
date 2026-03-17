@@ -18,6 +18,7 @@ const allPoolCards = ref([])
 const quizCards = ref([])    
 const currentIndex = ref(0)
 const isTestFinished = ref(false)
+const isCardFinished = ref(false) // Whether the current card is complete and waiting for "Next"
 
 // Quiz State
 const fieldsQueue = ref([])
@@ -30,10 +31,6 @@ const isProcessing = ref(false)
 
 // Results State
 const totalScore = ref(0)
-/* 
-  We store the IDs of cards that have at least one error.
-  To be ultra-safe, we'll use a plain array or be very explicit with the Set.
-*/
 const erroredCardIds = ref([])
 const pointsPerQuestion = ref(0)
 
@@ -50,6 +47,8 @@ const shuffleArray = (array) => {
 
 const prepareCardPhase = () => {
   if (!currentCard.value) return
+
+  isCardFinished.value = false // Reset for new card
 
   const availableFields = ['name']
   if (currentCard.value.icon) availableFields.push('icon')
@@ -71,9 +70,14 @@ const setupNextQuestion = () => {
     targetField.value = fieldsQueue.value[nextFieldIndex]
     generateChoices(targetField.value)
   } else {
+    // No more fields to ask, this card is done.
     targetField.value = null
     choices.value = []
-    setTimeout(goToNextCard, 500)
+    
+    // Reveal everything just to be safe
+    revealedFields.value = [...fieldsQueue.value]
+    
+    isCardFinished.value = true
   }
 }
 
@@ -81,7 +85,6 @@ const generateChoices = (field) => {
   if (!currentCard.value) return
   const correctValue = currentCard.value[field]
   
-  // Distractors: cards with different names AND having the field AND having a different field value
   let distractorsPool = allPoolCards.value.filter(c => 
     c.name !== currentCard.value.name && 
     c[field] && 
@@ -119,13 +122,11 @@ const handleChoice = (choice, index) => {
   selectedChoiceIndex.value = index
   showFeedback.value = true
 
-  // Capture current card ID to avoid any reactivity skip
   const currentId = currentCard.value.id || currentCard.value.name
 
   if (choice.isCorrect) {
     totalScore.value += pointsPerQuestion.value
   } else {
-    // Only add if not already in the error list
     if (!erroredCardIds.value.includes(currentId)) {
       erroredCardIds.value.push(currentId)
     }
@@ -152,47 +153,58 @@ const goToNextCard = () => {
 onMounted(async () => {
   try {
     let selectionCards = []
-
-    // Fetch cards for the test based on the selected domain/category
     if (selectionType.value === 'Catégorie') {
-      const { data, error } = await supabase
-        .from('Flashcards')
-        .select('*')
-        .eq('category', selectedCategory.value)
-      
+      const { data, error } = await supabase.from('Flashcards').select('*').eq('category', selectedCategory.value)
       if (error) throw error
       selectionCards = data || []
     } else {
-      // For a domain-wide test, we fetch all categories in that domain first
-      const { data: categories, error: catError } = await supabase
-        .from('Categories')
-        .select('name')
-        .eq('domain', selectedDomain.value)
-      
+      const { data: categories, error: catError } = await supabase.from('Categories').select('name').eq('domain', selectedDomain.value)
       if (catError) throw catError
-      
       const categoryNames = categories.map(c => c.name)
       if (categoryNames.length > 0) {
-        // fetchFlashcardsByCategories retrieves all cards within these categories
         selectionCards = await flashcardsStore.fetchFlashcardsByCategories(categoryNames)
       }
     }
 
-    // Now allPoolCards only contains cards that are logically within the test scope
+    // Use only the cards from the selected scope for distractors
     allPoolCards.value = selectionCards
-    
-    // Select a random subset for the actual quiz
     quizCards.value = shuffleArray(selectionCards).slice(0, requestedCount.value)
     
-    if (quizCards.value.length > 0) {
-      prepareCardPhase()
-    }
+    if (quizCards.value.length > 0) prepareCardPhase()
   } catch (error) {
-    console.error('Erreur lors de la préparation du test:', error)
+    console.error('Erreur:', error)
   } finally {
     setTimeout(() => { isLoading.value = false }, 1200)
   }
 })
+
+const saveAndExit = async () => {
+  try {
+    const scoreStr = `${Number(totalScore.value.toFixed(1))}/${quizCards.value.length}`
+    const toReviewStr = failedCards.value.map(c => c.name).join(', ')
+
+    const { error } = await supabase
+      .from('Statistiques')
+      .insert([
+        {
+          date: new Date().toISOString(),
+          domain: selectedDomain.value,
+          category: selectedCategory.value || null,
+          score: scoreStr,
+          to_review: toReviewStr
+        }
+      ])
+
+    if (error) throw error
+    
+    // Success, go home
+    router.push('/')
+  } catch (error) {
+    console.error('Erreur lors de l\'enregistrement des statistiques:', error)
+    // Even if it fails, we should probably let the user go back to home
+    router.push('/')
+  }
+}
 
 const exitTest = () => { router.push('/') }
 
@@ -250,7 +262,7 @@ const failedCards = computed(() => {
             <p>Score parfait ! Vous maîtrisez tout !</p>
           </div>
           
-          <button class="finish-btn" @click="exitTest">Retour à l'accueil</button>
+          <button class="finish-btn" @click="saveAndExit">Terminer le test</button>
         </div>
       </div>
 
@@ -278,7 +290,8 @@ const failedCards = computed(() => {
             </div>
           </div>
 
-          <div v-if="targetField" class="choices-panel">
+          <!-- Panneau de Choix -->
+          <div v-if="targetField && !isCardFinished" class="choices-panel">
             <p class="choice-instruction">Choisissez la bonne proposition :</p>
             <div class="choices-grid">
               <button 
@@ -294,6 +307,16 @@ const failedCards = computed(() => {
               </button>
             </div>
           </div>
+
+          <!-- Bouton suivant quand la carte est finie -->
+          <div v-if="isCardFinished" class="card-actions">
+            <button class="next-card-btn" @click="goToNextCard">
+              <span>Passer à la Flashcard suivante</span>
+              <svg viewBox="0 0 24 24" width="24" height="24">
+                <path fill="currentColor" d="M8.59,16.59L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.59Z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </transition>
@@ -304,8 +327,10 @@ const failedCards = computed(() => {
 .test-container {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 60px);
+  flex: 1;
+  width: 100%;
   background-color: #f8f9fa;
+  /* Allow natural document scroll instead of internal container scroll */
 }
 
 .state-container {
@@ -327,13 +352,12 @@ const failedCards = computed(() => {
 }
 
 .quiz-interface, .results-interface {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 0 1rem 2rem;
+  padding: 1rem 1rem 10rem 1rem; /* Generous bottom padding for mobile browsers */
+  display: flex;
+  flex-direction: column;
 }
 
 .score-card {
@@ -447,7 +471,13 @@ const failedCards = computed(() => {
 .progress-track { height: 6px; background-color: #eee; border-radius: 3px; }
 .progress-fill { height: 100%; background-color: #048B9A; transition: width 0.3s ease; }
 
-.quiz-body { flex: 1; display: flex; flex-direction: column; gap: 1.5rem; align-items: center; }
+.quiz-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+  width: 100%;
+}
 .flashcard-display { width: 100%; background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; min-height: 200px; display: flex; align-items: center; justify-content: center; }
 .active-card { text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 .card-icon { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
@@ -490,11 +520,41 @@ const failedCards = computed(() => {
 .choice-text { font-size: 1rem; font-weight: 600; color: #2c3e50; text-align: center; }
 .choice-html { font-size: 0.85rem; color: #555; text-align: left; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
+.card-actions {
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.next-card-btn {
+  background-color: #048B9A;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(4,139,154,0.2);
+  transition: all 0.2s;
+}
+
+.next-card-btn:hover {
+  background-color: #037380;
+  transform: translateX(5px);
+}
+
 .finish-btn, .return-btn { background-color: #048B9A; color: white; border: none; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: all 0.2s; margin-top: 1rem; }
 .finish-btn:hover, .return-btn:hover { background-color: #037380; transform: translateY(-2px); }
 
 .reveal { animation: slideDownIn 0.4s ease-out; }
 @keyframes slideDownIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
 .list-enter-active, .list-leave-active { transition: all 0.4s ease; }
 .list-enter-from, .list-leave-to { opacity: 0; transform: translateY(-20px); }
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }

@@ -30,6 +30,10 @@ const handleStartTest = (data) => {
         Allez voir tous les domaines que nous avons en cliquant ici :
         <router-link to="/domaines" class="cta-link">Domaines</router-link>
       </p>
+      <p class="cta-section">
+        Pour voir votre progression, consultez vos statistiques juste ici :
+        <router-link to="/statistiques" class="cta-link">Statistiques</router-link>
+      </p>
     </div>
 
     <!-- Modal Formulaire de Test -->

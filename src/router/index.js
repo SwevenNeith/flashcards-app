@@ -37,6 +37,11 @@ const router = createRouter({
         category: route.query.category,
         count: route.query.count
       })
+    },
+    {
+      path: '/statistiques',
+      name: 'statistiques',
+      component: () => import('../views/StatsView.vue')
     }
 
   ]
