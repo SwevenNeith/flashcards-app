@@ -9,8 +9,10 @@ const router = useRouter()
 const flashcardsStore = useFlashcardsStore()
 
 const selectionType = computed(() => route.query.type || '')
-const selectedDomain = computed(() => route.query.domain || '')
-const selectedCategory = computed(() => route.query.category || '')
+const selectedDomainId = computed(() => route.query.domainId || '')
+const selectedDomainName = computed(() => route.query.domainName || '')
+const selectedCategoryId = computed(() => route.query.categoryId || '')
+const selectedCategoryName = computed(() => route.query.categoryName || '')
 const requestedCount = computed(() => parseInt(route.query.count) || 5)
 
 const isLoading = ref(true)
@@ -154,15 +156,22 @@ onMounted(async () => {
   try {
     let selectionCards = []
     if (selectionType.value === 'Catégorie') {
-      const { data, error } = await supabase.from('Flashcards').select('*').eq('category', selectedCategory.value)
+      const { data, error } = await supabase.from('Flashcards').select('*').eq('category', selectedCategoryId.value)
       if (error) throw error
       selectionCards = data || []
     } else {
-      const { data: categories, error: catError } = await supabase.from('Categories').select('name').eq('domain', selectedDomain.value)
+      const { data: categories, error: catError } = await supabase.from('Categories').select('id').eq('domain', selectedDomainId.value)
       if (catError) throw catError
-      const categoryNames = categories.map(c => c.name)
-      if (categoryNames.length > 0) {
-        selectionCards = await flashcardsStore.fetchFlashcardsByCategories(categoryNames)
+      const categoryIds = categories.map(c => c.id)
+      if (categoryIds.length > 0) {
+        // We'll fetch cards that belong to any of these category IDs
+        const { data: cards, error: cardsError } = await supabase
+          .from('Flashcards')
+          .select('*')
+          .in('category', categoryIds)
+        
+        if (cardsError) throw cardsError
+        selectionCards = cards || []
       }
     }
 
@@ -188,8 +197,8 @@ const saveAndExit = async () => {
       .insert([
         {
           date: new Date().toISOString(),
-          domain: selectedDomain.value,
-          category: selectedCategory.value || null,
+          domain: selectedDomainId.value,
+          category: selectedCategoryId.value || null,
           score: scoreStr,
           to_review: toReviewStr
         }

@@ -64,16 +64,24 @@ export const useCategoriesStore = defineStore('categories', {
       }
     },
 
-    async fetchCategories(domainName) {
-      if (!domainName) return
+    async fetchCategories(identifier) {
+      if (!identifier) return
       
       this.loading = true
       this.error = null
       try {
-        const { data, error } = await supabase
-          .from('Categories')
-          .select('*')
-          .eq('domain', domainName)
+        const isId = /^[0-9a-fA-F-]{36}$/.test(identifier) || !isNaN(identifier)
+        
+        let query
+        if (isId) {
+          // Si c'est un ID, on filtre directement (plus robuste)
+          query = supabase.from('Categories').select('*').eq('domain', identifier)
+        } else {
+          // Si c'est un nom, on passe par la jointure
+          query = supabase.from('Categories').select('*, Domaines!inner(name)').eq('Domaines.name', identifier)
+        }
+
+        const { data, error } = await query
         
         if (error) throw error
         this.categories = data || []
@@ -99,6 +107,16 @@ export const useCategoriesStore = defineStore('categories', {
 
       this.loading = true
       try {
+        // First, get the domain ID by its name
+        const { data: domainDataRow, error: domainError } = await supabase
+          .from('Domaines')
+          .select('id')
+          .eq('name', domainName)
+          .single()
+        
+        if (domainError || !domainDataRow) throw new Error('Domaine introuvable')
+        const domainId = domainDataRow.id
+
         let iconUrl = categoryData.icon
         
         if (iconUrl && iconUrl.startsWith('data:')) {
@@ -112,7 +130,7 @@ export const useCategoriesStore = defineStore('categories', {
           .from('Categories')
           .insert([{
             name: trimmedName,
-            domain: domainName,
+            domain: domainId,
             description: categoryData.description || '',
             icon: iconUrl || null
           }])
@@ -153,6 +171,10 @@ export const useCategoriesStore = defineStore('categories', {
           }
         }
 
+        // Resolve domain ID
+        const { data: domData } = await supabase.from('Domaines').select('id').eq('name', domainName).single()
+        if (!domData) throw new Error('Domaine introuvable')
+
         const { data, error } = await supabase
           .from('Categories')
           .update({
@@ -161,7 +183,7 @@ export const useCategoriesStore = defineStore('categories', {
             icon: iconUrl || null
           })
           .eq('name', oldName)
-          .eq('domain', domainName)
+          .eq('domain', domData.id)
           .select()
 
         if (error) {
@@ -200,11 +222,15 @@ export const useCategoriesStore = defineStore('categories', {
         const categoryToDelete = this.categories.find(c => c.name === name)
         const oldIcon = categoryToDelete?.icon
 
+        // Resolve domain ID
+        const { data: domData } = await supabase.from('Domaines').select('id').eq('name', domainName).single()
+        if (!domData) throw new Error('Domaine introuvable')
+
         const { error } = await supabase
           .from('Categories')
           .delete()
           .eq('name', name)
-          .eq('domain', domainName)
+          .eq('domain', domData.id)
 
         if (error) throw error
         

@@ -38,10 +38,15 @@ const handleStart = () => {
   if (selectionType.value === 'Domaine' && !selectedDomain.value) return
   if (selectionType.value === 'Catégorie' && (!selectedDomain.value || !selectedCategory.value)) return
 
+  const domainObj = domainesStore.domaines.find(d => d.id === selectedDomain.value || d.name === selectedDomain.value)
+  const categoryObj = categoriesStore.categories.find(c => c.id === selectedCategory.value || c.name === selectedCategory.value)
+
   emit('start', {
     type: selectionType.value,
-    domain: selectedDomain.value,
-    category: selectedCategory.value,
+    domainId: domainObj?.id,
+    domainName: domainObj?.name,
+    categoryId: categoryObj?.id,
+    categoryName: categoryObj?.name,
     count: questionCount.value
   })
 }
@@ -90,7 +95,7 @@ const handleStart = () => {
             <option 
               v-for="domain in domainesStore.domaines" 
               :key="domain.id" 
-              :value="domain.name"
+              :value="domain.id"
             >
               {{ domain.name }}
             </option>
@@ -112,7 +117,7 @@ const handleStart = () => {
             <option 
               v-for="category in categoriesStore.categories" 
               :key="category.id" 
-              :value="category.name"
+              :value="category.id"
             >
               {{ category.name }}
             </option>

@@ -12,8 +12,10 @@ const handleStartTest = (data) => {
     name: 'test',
     query: {
       type: data.type,
-      domain: data.domain,
-      category: data.category,
+      domainId: data.domainId,
+      domainName: data.domainName,
+      categoryId: data.categoryId,
+      categoryName: data.categoryName,
       count: data.count
     }
   })

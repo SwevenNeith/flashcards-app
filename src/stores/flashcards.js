@@ -64,16 +64,23 @@ export const useFlashcardsStore = defineStore('flashcards', {
       }
     },
 
-    async fetchFlashcards(categoryName) {
-      if (!categoryName) return
+    async fetchFlashcards(identifier) {
+      if (!identifier) return
       
       this.loading = true
       this.error = null
       try {
-        const { data, error } = await supabase
-          .from('Flashcards')
-          .select('*')
-          .eq('category', categoryName)
+        const isId = /^[0-9a-fA-F-]{36}$/.test(identifier) || !isNaN(identifier)
+        
+        let query = supabase.from('Flashcards').select('*, Categories!inner(name)')
+        
+        if (isId) {
+          query = query.eq('category', identifier)
+        } else {
+          query = query.eq('Categories.name', identifier)
+        }
+
+        const { data, error } = await query
         
         if (error) throw error
         this.flashcards = data || []
@@ -92,6 +99,17 @@ export const useFlashcardsStore = defineStore('flashcards', {
       
       this.loading = true
       try {
+        // First, get the category ID and domain ID by its name
+        const { data: catData, error: catError } = await supabase
+          .from('Categories')
+          .select('id, domain')
+          .eq('name', categoryName)
+          .single()
+        
+        if (catError || !catData) throw new Error('Catégorie introuvable')
+        const categoryId = catData.id
+        const domainId = catData.domain
+
         let iconUrl = flashcardData.icon
         
         if (iconUrl && iconUrl.startsWith('data:')) {
@@ -105,7 +123,8 @@ export const useFlashcardsStore = defineStore('flashcards', {
           .from('Flashcards')
           .insert([{
             name: trimmedName,
-            category: categoryName,
+            category: categoryId,
+            domain: domainId,
             description: flashcardData.description || '',
             icon: iconUrl || null
           }])
@@ -139,6 +158,10 @@ export const useFlashcardsStore = defineStore('flashcards', {
           }
         }
 
+        // Resolve category ID
+        const { data: catData } = await supabase.from('Categories').select('id').eq('name', categoryName).single()
+        if (!catData) throw new Error('Catégorie introuvable')
+
         const { data, error } = await supabase
           .from('Flashcards')
           .update({
@@ -147,7 +170,7 @@ export const useFlashcardsStore = defineStore('flashcards', {
             icon: iconUrl || null
           })
           .eq('name', oldName)
-          .eq('category', categoryName)
+          .eq('category', catData.id)
           .select()
 
         if (error) throw error
@@ -179,11 +202,15 @@ export const useFlashcardsStore = defineStore('flashcards', {
         const flashcardToDelete = this.flashcards.find(f => f.name === name)
         const oldIcon = flashcardToDelete?.icon
 
+        // Resolve category ID
+        const { data: catData } = await supabase.from('Categories').select('id').eq('name', categoryName).single()
+        if (!catData) throw new Error('Catégorie introuvable')
+
         const { error } = await supabase
           .from('Flashcards')
           .delete()
           .eq('name', name)
-          .eq('category', categoryName)
+          .eq('category', catData.id)
 
         if (error) throw error
         
@@ -208,8 +235,8 @@ export const useFlashcardsStore = defineStore('flashcards', {
       try {
         const { data, error } = await supabase
           .from('Flashcards')
-          .select('*')
-          .in('category', categoryNames)
+          .select('*, Categories!inner(name)')
+          .in('Categories.name', categoryNames)
         
         if (error) throw error
         return data || []

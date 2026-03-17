@@ -18,7 +18,11 @@ onMounted(async () => {
   try {
     const { data, error } = await supabase
       .from('Statistiques')
-      .select('*')
+      .select(`
+        *,
+        Domaines (name),
+        Categories (name)
+      `)
       .order('date', { ascending: false })
     
     if (error) throw error
@@ -52,8 +56,8 @@ onMounted(async () => {
           <tr v-for="stat in stats" :key="stat.id">
             <td class="date-cell">{{ formatDate(stat.date) }}</td>
             <td class="target-cell">
-              <strong>{{ stat.domain }}</strong>
-              <span v-if="stat.category"> - {{ stat.category }}</span>
+              <strong>{{ stat.Domaines?.name || 'Inconnu' }}</strong>
+              <span v-if="stat.Categories"> - {{ stat.Categories.name }}</span>
             </td>
             <td class="score-cell">
               <span class="score-badge" :class="{'perfect': stat.score.startsWith(stat.score.split('/')[1])}">
