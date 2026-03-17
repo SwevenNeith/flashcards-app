@@ -31,6 +31,7 @@ onMounted(() => {
 
 const compressImage = (base64Str, maxWidth = 200, maxHeight = 200) => {
   return new Promise((resolve) => {
+    const mimeType = base64Str.match(/data:([^;]+);base64/)?.[1] || 'image/jpeg'
     const img = new Image()
     img.src = base64Str
     img.onload = () => {
@@ -53,8 +54,15 @@ const compressImage = (base64Str, maxWidth = 200, maxHeight = 200) => {
       canvas.width = width
       canvas.height = height
       const ctx = canvas.getContext('2d')
+
+      // Clear canvas for transparency if PNG
+      if (mimeType === 'image/png') {
+        ctx.clearRect(0, 0, width, height)
+      }
+
       ctx.drawImage(img, 0, 0, width, height)
-      resolve(canvas.toDataURL('image/jpeg', 0.7))
+      // For PNG, quality parameter is ignored
+      resolve(canvas.toDataURL(mimeType, mimeType === 'image/jpeg' ? 0.7 : undefined))
     }
   })
 }
