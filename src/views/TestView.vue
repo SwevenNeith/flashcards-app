@@ -31,6 +31,9 @@ const showFeedback = ref(false)
 const selectedChoiceIndex = ref(null)
 const isProcessing = ref(false)
 
+// Quiz Progress Tracking (Supabase table: Quizz)
+const quizzId = ref(null)
+
 // Results State
 const totalScore = ref(0)
 const erroredCardIds = ref([])
@@ -65,7 +68,7 @@ const prepareCardPhase = () => {
   setupNextQuestion()
 }
 
-const setupNextQuestion = () => {
+const setupNextQuestion = async () => {
   const nextFieldIndex = revealedFields.value.length
   
   if (nextFieldIndex < fieldsQueue.value.length) {
@@ -77,9 +80,17 @@ const setupNextQuestion = () => {
     choices.value = []
     
     // Reveal everything just to be safe
-    revealedFields.value = [...fieldsQueue.value]
-    
+    revealedFields.value = [...fieldsQueue.value]    
     isCardFinished.value = true
+
+    // Update position in Quizz tracking table (already finished this card, so move to the next label)
+    if (quizzId.value) {
+      const nextPos = Math.min(currentIndex.value + 2, quizCards.value.length)
+      await supabase
+        .from('Quizz')
+        .update({ position: `${nextPos}/${quizCards.value.length}` })
+        .eq('id', quizzId.value)
+    }
   }
 }
 
@@ -134,11 +145,20 @@ const handleChoice = (choice, index) => {
     }
   }
 
-  setTimeout(() => {
+  setTimeout(async () => {
     showFeedback.value = false
     selectedChoiceIndex.value = null
     isProcessing.value = false
     revealedFields.value.push(targetField.value)
+    
+    // Update score in Quizz tracking table
+    if (quizzId.value) {
+      await supabase
+        .from('Quizz')
+        .update({ score: Number(totalScore.value.toFixed(1)) })
+        .eq('id', quizzId.value)
+    }
+
     setupNextQuestion()
   }, 3000)
 }
@@ -179,6 +199,26 @@ onMounted(async () => {
     allPoolCards.value = selectionCards
     quizCards.value = shuffleArray(selectionCards).slice(0, requestedCount.value)
     
+    // Create tracking record in Quizz table
+    const flashcardIds = quizCards.value.map(c => c.id)
+    const { data: qData, error: qError } = await supabase
+      .from('Quizz')
+      .insert([
+        {
+          domain: selectedDomainId.value,
+          category: selectedCategoryId.value || null,
+          flashcards: flashcardIds,
+          position: `1/${quizCards.value.length}`,
+          score: 0
+        }
+      ])
+      .select()
+    
+    if (qError) throw qError
+    if (qData && qData[0]) {
+      quizzId.value = qData[0].id
+    }
+
     if (quizCards.value.length > 0) prepareCardPhase()
   } catch (error) {
     console.error('Erreur:', error)
