@@ -55,11 +55,11 @@ const prepareCardPhase = () => {
 
   isCardFinished.value = false // Reset for new card
 
-  const availableFields = ['name']
-  if (currentCard.value.icon) availableFields.push('icon')
-  if (currentCard.value.description) availableFields.push('description')
+  const availableFieldsSet = new Set(['name'])
+  if (currentCard.value.icon) availableFieldsSet.add('icon')
+  if (currentCard.value.description) availableFieldsSet.add('description')
 
-  fieldsQueue.value = shuffleArray(availableFields)
+  fieldsQueue.value = shuffleArray(Array.from(availableFieldsSet))
   revealedFields.value = [fieldsQueue.value[0]]
   
   const questionCount = fieldsQueue.value.length - 1
@@ -151,11 +151,14 @@ const handleChoice = (choice, index) => {
     isProcessing.value = false
     revealedFields.value.push(targetField.value)
     
-    // Update score in Quizz tracking table
+    // Update score and to_review in Quizz tracking table
     if (quizzId.value) {
       await supabase
         .from('Quizz')
-        .update({ score: Number(totalScore.value.toFixed(1)) })
+        .update({ 
+          score: Number(totalScore.value.toFixed(1)),
+          to_review: erroredCardIds.value
+        })
         .eq('id', quizzId.value)
     }
 
@@ -173,53 +176,130 @@ const goToNextCard = () => {
 }
 
 onMounted(async () => {
+  const quizzIdInQuery = route.query.quizzId
+  
   try {
     let selectionCards = []
-    if (selectionType.value === 'Catégorie') {
-      const { data, error } = await supabase.from('Flashcards').select('*').eq('category', selectedCategoryId.value)
-      if (error) throw error
-      selectionCards = data || []
+    
+    if (quizzIdInQuery) {
+      // Resume existing quiz
+      quizzId.value = quizzIdInQuery
+      const { data: qData, error: qError } = await supabase
+        .from('Quizz')
+        .select(`
+          *,
+          Domaines (name),
+          Categories (name)
+        `)
+        .eq('id', quizzId.value)
+        .single()
+      
+      if (qError) throw qError
+      
+      // Update local naming refs if they aren't in query (helpful for page title)
+      // Note: route.query is read-only, but we can use qData to populate our state
+      
+      let flashcardIds = qData.flashcards
+      
+      // Safety check: ensure flashcardIds is an array (might be a string if column type is text)
+      if (typeof flashcardIds === 'string') {
+        try {
+          flashcardIds = JSON.parse(flashcardIds)
+        } catch (e) {
+          // If not JSON, try to clean it (remove brackets) and split
+          flashcardIds = flashcardIds.replace(/[\[\]"]/g, '').split(',').map(id => id.trim())
+        }
+      }
+
+      if (!Array.isArray(flashcardIds)) {
+        flashcardIds = []
+      }
+
+      // Fetch specific cards by ID
+      const { data: cards, error: cardsError } = await supabase
+        .from('Flashcards')
+        .select('*')
+        .in('id', flashcardIds)
+      
+      if (cardsError) throw cardsError
+      
+      // Sort cards to match the original pool order stored in flashcardIds
+      selectionCards = flashcardIds.map(id => cards.find(c => c.id === id)).filter(Boolean)
+      
+      // Restore score, position and errors
+      totalScore.value = Number(qData.score) || 0
+      
+      let reviewIds = qData.to_review || []
+      if (typeof reviewIds === 'string') {
+        try {
+          reviewIds = JSON.parse(reviewIds)
+        } catch (e) {
+          reviewIds = reviewIds.replace(/[\[\]"]/g, '').split(',').map(id => id.trim()).filter(Boolean)
+        }
+      }
+      erroredCardIds.value = Array.isArray(reviewIds) ? reviewIds : []
+      
+      const posParts = (qData.position || "1/1").split('/')
+      currentIndex.value = Math.max(0, parseInt(posParts[0]) - 1)
+      
+      // Update selectionType based on data
+      // (Though selectionType is usually a computed, we can't change it, 
+      // but some components might use it. We'll rely on our data.)
+      
+      allPoolCards.value = selectionCards
+      quizCards.value = selectionCards
     } else {
-      const { data: categories, error: catError } = await supabase.from('Categories').select('id').eq('domain', selectedDomainId.value)
-      if (catError) throw catError
-      const categoryIds = categories.map(c => c.id)
-      if (categoryIds.length > 0) {
-        // We'll fetch cards that belong to any of these category IDs
-        const { data: cards, error: cardsError } = await supabase
-          .from('Flashcards')
-          .select('*')
-          .in('category', categoryIds)
+      // Start new quiz
+      if (selectionType.value === 'Catégorie') {
+        const { data, error } = await supabase.from('Flashcards').select('*').eq('category', selectedCategoryId.value)
+        if (error) throw error
+        selectionCards = data || []
+      } else {
+        const { data: categories, error: catError } = await supabase.from('Categories').select('id').eq('domain', selectedDomainId.value)
+        if (catError) throw catError
+        const categoryIds = categories.map(c => c.id)
+        if (categoryIds.length > 0) {
+          const { data: cards, error: cardsError } = await supabase
+            .from('Flashcards')
+            .select('*')
+            .in('category', categoryIds)
+          
+          if (cardsError) throw cardsError
+          selectionCards = cards || []
+        }
+      }
+
+      // Use only the cards from the selected scope for distractors
+      allPoolCards.value = selectionCards
+      quizCards.value = shuffleArray(selectionCards).slice(0, requestedCount.value)
+      
+      if (quizCards.value.length > 0) {
+        // Create tracking record in Quizz table
+        const flashcardIds = quizCards.value.map(c => c.id)
+        const { data: qData, error: qError } = await supabase
+          .from('Quizz')
+          .insert([
+            {
+              domain: selectedDomainId.value,
+              category: selectedCategoryId.value || null,
+              flashcards: flashcardIds,
+              position: `1/${quizCards.value.length}`,
+              score: 0,
+              to_review: [] 
+            }
+          ])
+          .select()
         
-        if (cardsError) throw cardsError
-        selectionCards = cards || []
+        if (qError) throw qError
+        if (qData && qData[0]) {
+          quizzId.value = qData[0].id
+        }
       }
     }
 
-    // Use only the cards from the selected scope for distractors
-    allPoolCards.value = selectionCards
-    quizCards.value = shuffleArray(selectionCards).slice(0, requestedCount.value)
-    
-    // Create tracking record in Quizz table
-    const flashcardIds = quizCards.value.map(c => c.id)
-    const { data: qData, error: qError } = await supabase
-      .from('Quizz')
-      .insert([
-        {
-          domain: selectedDomainId.value,
-          category: selectedCategoryId.value || null,
-          flashcards: flashcardIds,
-          position: `1/${quizCards.value.length}`,
-          score: 0
-        }
-      ])
-      .select()
-    
-    if (qError) throw qError
-    if (qData && qData[0]) {
-      quizzId.value = qData[0].id
+    if (quizCards.value.length > 0) {
+      prepareCardPhase()
     }
-
-    if (quizCards.value.length > 0) prepareCardPhase()
   } catch (error) {
     console.error('Erreur:', error)
   } finally {
@@ -246,6 +326,11 @@ const saveAndExit = async () => {
 
     if (error) throw error
     
+    // Cleanup: Delete the tracking record as the test is now complete
+    if (quizzId.value) {
+      await supabase.from('Quizz').delete().eq('id', quizzId.value)
+    }
+
     // Success, go home
     router.push('/')
   } catch (error) {

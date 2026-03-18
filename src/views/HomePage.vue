@@ -1,10 +1,25 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from '../lib/supabase'
 import TestForm from '../components/TestForm.vue'
 
 const router = useRouter()
 const showForm = ref(false)
+const activeQuizzes = ref([])
+
+onMounted(async () => {
+  const { data, error } = await supabase
+    .from('Quizz')
+    .select(`
+      *,
+      Domaines (name),
+      Categories (name)
+    `)
+  if (!error) {
+    activeQuizzes.value = data || []
+  }
+})
 
 const handleStartTest = (data) => {
   showForm.value = false
@@ -20,6 +35,19 @@ const handleStartTest = (data) => {
     }
   })
 }
+
+const resumeQuizz = (quizz) => {
+  router.push({
+    name: 'test',
+    query: {
+      quizzId: quizz.id,
+      domainId: quizz.domain,
+      domainName: quizz.Domaines?.name,
+      categoryId: quizz.category,
+      categoryName: quizz.Categories?.name
+    }
+  })
+}
 </script>
 
 <template>
@@ -27,6 +55,17 @@ const handleStartTest = (data) => {
     <div class="welcome-container">
       <div class="test-action">
         <button class="start-test-btn" @click="showForm = true">Démarrer un test</button>
+      </div>
+
+      <!-- Tests en cours -->
+      <div v-if="activeQuizzes.length > 0" class="active-quizzes-section">
+        <div v-for="quizz in activeQuizzes" :key="quizz.id" class="quizz-card">
+          <p class="quizz-info">
+            Vous avez un quizz en cours sur 
+            <strong>{{ quizz.Domaines?.name }}{{ quizz.Categories ? ' / ' + quizz.Categories.name : '' }}</strong>
+          </p>
+          <button class="resume-btn" @click="resumeQuizz(quizz)">Reprendre le quizz</button>
+        </div>
       </div>
       <p class="cta-section">
         Allez voir tous les domaines que nous avons en cliquant ici :
@@ -107,6 +146,59 @@ const handleStartTest = (data) => {
   font-size: 1.25rem;
   display: inline;
   margin-left: 0.25rem;
+}
+
+.active-quizzes-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 0.5rem 0;
+}
+
+.quizz-card {
+  background-color: #f0f7f8;
+  border-left: 5px solid #048B9A;
+  padding: 1.25rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.quizz-info {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+.resume-btn {
+  background-color: #048B9A;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.resume-btn:hover {
+  background-color: #037380;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 600px) {
+  .quizz-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .resume-btn {
+    width: 100%;
+  }
 }
 
 /* Transition Fade */
