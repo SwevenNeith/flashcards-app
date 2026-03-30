@@ -42,6 +42,11 @@ const router = createRouter({
       path: '/statistiques',
       name: 'statistiques',
       component: () => import('../views/StatsView.vue')
+    },
+    {
+      path: '/graphiques',
+      name: 'charts',
+      component: () => import('../views/ChartsView.vue')
     }
 
   ]

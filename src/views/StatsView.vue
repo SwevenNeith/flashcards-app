@@ -72,6 +72,15 @@ onMounted(async () => {
     </div>
 
     <div v-else class="stats-content">
+      <div class="stats-header">
+        <router-link to="/graphiques" class="charts-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path fill="currentColor" d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z" />
+          </svg>
+          Graphiques
+        </router-link>
+      </div>
+
       <div class="filters-section">
         <div class="filter-group">
           <label for="domain-filter">Domaine</label>
@@ -153,6 +162,33 @@ onMounted(async () => {
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   text-align: center;
   width: 100%;
+}
+
+.stats-header {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.charts-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #048B9A;
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(4,139,154,0.15);
+}
+
+.charts-btn:hover {
+  background-color: #037380;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(4,139,154,0.25);
 }
 
 .filters-section {
