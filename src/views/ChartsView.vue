@@ -40,6 +40,14 @@ const timeRange = ref('all') // 'week', 'month', 'year', 'all'
 const selectedYear = ref(new Date().getFullYear())
 const selectedMonth = ref(new Date().getMonth()) // 0-based
 
+const sortedDomaines = computed(() => {
+  return [...domainesStore.domaines].sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const sortedCategories = computed(() => {
+  return [...categoriesStore.categories].sort((a, b) => a.name.localeCompare(b.name))
+})
+
 const years = computed(() => {
   const currentYear = new Date().getFullYear()
   const yearsList = []
@@ -278,14 +286,14 @@ onMounted(async () => {
             <label>Domaine</label>
             <select v-model="selectedDomain" class="styled-select">
               <option value="">Tous les domaines</option>
-              <option v-for="dom in domainesStore.domaines" :key="dom.id" :value="dom.id">{{ dom.name }}</option>
+              <option v-for="dom in sortedDomaines" :key="dom.id" :value="dom.id">{{ dom.name }}</option>
             </select>
           </div>
           <div class="filter-group" :class="{ disabled: !selectedDomain }">
             <label>Catégorie</label>
             <select v-model="selectedCategory" class="styled-select" :disabled="!selectedDomain">
               <option value="">Toutes les catégories</option>
-              <option v-for="cat in categoriesStore.categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              <option v-for="cat in sortedCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
             </select>
           </div>
         </div>

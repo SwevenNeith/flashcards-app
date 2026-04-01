@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useDomainesStore } from '../stores/domaines'
 import { useCategoriesStore } from '../stores/categories'
 
@@ -13,6 +13,14 @@ const selectedDomain = ref('')
 const selectedCategory = ref('')
 const questionCount = ref(5)
 const countOptions = [5, 10, 20]
+
+const sortedDomaines = computed(() => {
+  return [...domainesStore.domaines].sort((a, b) => a.name.localeCompare(b.name))
+})
+
+const sortedCategories = computed(() => {
+  return [...categoriesStore.categories].sort((a, b) => a.name.localeCompare(b.name))
+})
 
 onMounted(async () => {
   if (domainesStore.domaines.length === 0) {
@@ -93,7 +101,7 @@ const handleStart = () => {
           >
             <option value="" disabled>Choisir un domaine...</option>
             <option 
-              v-for="domain in domainesStore.domaines" 
+              v-for="domain in sortedDomaines" 
               :key="domain.id" 
               :value="domain.id"
             >
@@ -115,7 +123,7 @@ const handleStart = () => {
               {{ !selectedDomain ? 'Sélectionnez d\'abord un domaine' : 'Choisir une catégorie...' }}
             </option>
             <option 
-              v-for="category in categoriesStore.categories" 
+              v-for="category in sortedCategories" 
               :key="category.id" 
               :value="category.id"
             >
