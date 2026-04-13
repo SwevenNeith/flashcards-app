@@ -100,21 +100,26 @@ const generateChoices = (field) => {
   
   const normalize = (val) => (typeof val === 'string' ? val.trim() : val)
   const normCorrect = normalize(correctValue)
+  const normName = normalize(currentCard.value.name)
+  const normDesc = normalize(currentCard.value.description)
   
+  const isGoodDistractor = (c) => {
+    if (!c[field]) return false
+    const dField = normalize(c[field])
+    const dName = normalize(c.name)
+    const dDesc = normalize(c.description)
+    return dField !== normCorrect && dName !== normName && dDesc !== normDesc
+  }
+
   let distractorsPool = allPoolCards.value.filter(c => 
     c.category === currentCard.value.category && 
-    c.name !== currentCard.value.name && 
-    c[field] && 
-    normalize(c[field]) !== normCorrect
+    isGoodDistractor(c)
   )
 
-  // Fallback: if we don't have enough distractors in the same category, 
-  // take from the whole pool (excluding the current category to avoid getting too many)
   if (distractorsPool.length < 3) {
     const additionalDistractors = allPoolCards.value.filter(c => 
       c.category !== currentCard.value.category && 
-      c[field] && 
-      normalize(c[field]) !== normCorrect
+      isGoodDistractor(c)
     )
     distractorsPool = [...distractorsPool, ...additionalDistractors]
   }
