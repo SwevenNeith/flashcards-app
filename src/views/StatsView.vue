@@ -13,6 +13,24 @@ const isLoading = ref(true)
 const selectedDomain = ref('')
 const selectedCategory = ref('')
 
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = 10
+
+const totalPages = computed(() => Math.ceil(filteredStats.value.length / itemsPerPage))
+
+const paginatedStats = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredStats.value.slice(start, start + itemsPerPage)
+})
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
 const sortedDomaines = computed(() => {
   return [...domainesStore.domaines].sort((a, b) => a.name.localeCompare(b.name))
 })
@@ -42,9 +60,14 @@ const filteredStats = computed(() => {
 
 watch(selectedDomain, async (newDomain) => {
   selectedCategory.value = ''
+  currentPage.value = 1 // Reset pagination
   if (newDomain) {
     await categoriesStore.fetchCategories(newDomain)
   }
+})
+
+watch(selectedCategory, () => {
+  currentPage.value = 1 // Reset pagination
 })
 
 onMounted(async () => {
@@ -104,6 +127,12 @@ onMounted(async () => {
             <option v-for="cat in sortedCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
           </select>
         </div>
+        <div class="total-badge-container">
+          <div class="total-tests-badge">
+            <span class="label">Total de tests</span>
+            <span class="count">{{ filteredStats.length }}</span>
+          </div>
+        </div>
       </div>
 
       <div v-if="filteredStats.length > 0" class="table-wrapper">
@@ -117,7 +146,7 @@ onMounted(async () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="stat in filteredStats" :key="stat.id">
+            <tr v-for="stat in paginatedStats" :key="stat.id">
             <td class="date-cell">{{ formatDate(stat.date) }}</td>
             <td class="target-cell">
               <div class="domain-name">{{ stat.Domaines?.name || 'Inconnu' }}</div>
@@ -135,6 +164,27 @@ onMounted(async () => {
           </tr>
         </tbody>
         </table>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="pagination">
+          <div class="pagination-controls">
+            <button class="page-btn" @click="goToPage(1)" :disabled="currentPage === 1" title="Premier">
+              «
+            </button>
+            <button class="page-btn" @click="goToPage(currentPage - 1)" :disabled="currentPage === 1" title="Précédent">
+              ‹
+            </button>
+            <div class="page-info">
+              Page <strong>{{ currentPage }}</strong> sur <strong>{{ totalPages }}</strong>
+            </div>
+            <button class="page-btn" @click="goToPage(currentPage + 1)" :disabled="currentPage === totalPages" title="Suivant">
+              ›
+            </button>
+            <button class="page-btn" @click="goToPage(totalPages)" :disabled="currentPage === totalPages" title="Dernier">
+              »
+            </button>
+          </div>
+        </div>
       </div>
 
       <div v-else class="empty-state">
@@ -207,6 +257,37 @@ onMounted(async () => {
   padding: 1.5rem;
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  align-items: flex-end;
+}
+
+.total-badge-container {
+  display: flex;
+  align-items: center;
+  padding-bottom: 0.25rem;
+}
+
+.total-tests-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f0f7f8;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e0eff1;
+}
+
+.total-tests-badge .label {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.total-tests-badge .count {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #048B9A;
 }
 
 .filter-group {
@@ -352,6 +433,57 @@ onMounted(async () => {
 
 .empty-icon {
   margin-bottom: 1rem;
+}
+
+/* Pagination Styles */
+.pagination {
+  padding: 1.25rem;
+  border-top: 1px solid #f5f5f5;
+  background-color: #fafbfc;
+  display: flex;
+  justify-content: center;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd;
+  background-color: white;
+  border-radius: 10px;
+  color: #2c3e50;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  border-color: #048B9A;
+  color: #048B9A;
+  background-color: #f0f7f8;
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f9f9f9;
+}
+
+.page-info {
+  font-size: 0.95rem;
+  color: #666;
+}
+
+.page-info strong {
+  color: #048B9A;
 }
 
 /* Responsive adjustments */

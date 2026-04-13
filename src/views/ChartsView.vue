@@ -84,9 +84,15 @@ const filterStats = computed(() => {
 
   if (timeRange.value === 'week') {
     const now = new Date()
-    const lastWeek = new Date(now)
-    lastWeek.setDate(now.getDate() - 7)
-    filtered = filtered.filter(s => new Date(s.date) >= lastWeek)
+    const day = now.getDay() // 0 (Dimanche) à 6 (Samedi)
+    // Calculer le décalage pour atteindre le lundi (Lundi = 1, donc diff = day - 1)
+    // Si on est dimanche (0), le décalage est de 6 jours vers l'arrière
+    const diff = day === 0 ? 6 : day - 1
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - diff)
+    monday.setHours(0, 0, 0, 0)
+    
+    filtered = filtered.filter(s => new Date(s.date) >= monday)
   } else if (timeRange.value === 'month') {
     filtered = filtered.filter(s => {
       const d = new Date(s.date)
@@ -228,6 +234,11 @@ onMounted(async () => {
     ])
     if (statsResult.error) throw statsResult.error
     stats.value = statsResult.data || []
+    
+    // Sélectionner le premier domaine par défaut s'il n'y en a pas déjà un
+    if (sortedDomaines.value.length > 0 && !selectedDomain.value) {
+      selectedDomain.value = sortedDomaines.value[0].id
+    }
   } catch (error) {
     console.error('Erreur:', error)
   } finally {
@@ -285,7 +296,6 @@ onMounted(async () => {
           <div class="filter-group">
             <label>Domaine</label>
             <select v-model="selectedDomain" class="styled-select">
-              <option value="">Tous les domaines</option>
               <option v-for="dom in sortedDomaines" :key="dom.id" :value="dom.id">{{ dom.name }}</option>
             </select>
           </div>
