@@ -7,6 +7,8 @@ import TestForm from '../components/TestForm.vue'
 const router = useRouter()
 const showForm = ref(false)
 const activeQuizzes = ref([])
+const newCardsCount = ref(0)
+const dueCardsCount = ref(0)
 
 onMounted(async () => {
   const { data, error } = await supabase
@@ -19,6 +21,17 @@ onMounted(async () => {
   if (!error) {
     activeQuizzes.value = data || []
   }
+
+  // Fetch Revision counts
+  const today = new Date().toISOString()
+  
+  const [newRes, dueRes] = await Promise.all([
+    supabase.from('Revision').select('*', { count: 'exact', head: true }).eq('maitrise', 0),
+    supabase.from('Revision').select('*', { count: 'exact', head: true }).lte('due_date', today)
+  ])
+  
+  newCardsCount.value = newRes.count || 0
+  dueCardsCount.value = dueRes.count || 0
 })
 
 const handleStartTest = (data) => {
@@ -75,6 +88,11 @@ const resumeQuizz = (quizz) => {
         Pour voir votre progression, consultez vos statistiques juste ici :
         <router-link to="/statistiques" class="cta-link">Statistiques</router-link>
       </p>
+
+      <div class="revision-summary cta-section">
+        <p>Vous avez <strong>{{ newCardsCount }}</strong> nouvelles cartes.</p>
+        <p>Vous avez <strong>{{ dueCardsCount }}</strong> cartes à réviser aujourd'hui.</p>
+      </div>
     </div>
 
     <!-- Modal Formulaire de Test -->
@@ -93,7 +111,7 @@ const resumeQuizz = (quizz) => {
   flex: 1;
   padding: 2rem 1rem;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: flex-start;
   text-align: justify;
 }
@@ -101,16 +119,16 @@ const resumeQuizz = (quizz) => {
 .welcome-container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 1.5rem;
+  align-items: stretch;
+  gap: 2rem;
   width: 100%;
-  max-width: 600px;
+  max-width: 900px;
 }
 
 .test-action {
   width: 100%;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .start-test-btn {
@@ -137,6 +155,10 @@ const resumeQuizz = (quizz) => {
   font-size: 1.1rem;
   color: #666;
   line-height: 1.6;
+}
+
+.revision-summary {
+  margin-top: 1rem;
 }
 
 .cta-link {
