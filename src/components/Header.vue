@@ -20,6 +20,10 @@ const goBack = () => {
   <header class="main-header">
     <div class="header-content">
       <div class="header-left">
+        <router-link to="/" class="logo-link" title="Retour à l'accueil">
+          <img src="../assets/flashcards.png" alt="Flashcards Logo" class="header-logo" />
+        </router-link>
+        
         <button 
           v-if="route.path !== '/'" 
           class="back-button" 
@@ -35,8 +39,17 @@ const goBack = () => {
       <h1>{{ title }}</h1>
 
       <div class="header-right">
-        <router-link to="/" class="logo-link" title="Retour à l'accueil">
-          <img src="../assets/flashcards.png" alt="Flashcards Logo" class="header-logo" />
+        <router-link to="/domaines" class="icon-link" title="Domaines">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+          </svg>
+        </router-link>
+        <router-link to="/statistiques" class="icon-link" title="Statistiques">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
         </router-link>
       </div>
     </div>
@@ -76,16 +89,26 @@ const goBack = () => {
   gap: 0.5rem;
 }
 
+.header-logo {
+  height: 28px;
+  width: auto;
+  filter: brightness(0) invert(1);
+  transition: opacity 0.2s;
+}
+
 .logo-link {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
   text-decoration: none;
 }
 
-.header-logo {
-  height: 32px;
-  width: auto;
-  border-radius: 4px;
+.logo-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .main-header h1 {
@@ -113,5 +136,25 @@ const goBack = () => {
 
 .back-button:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.icon-link {
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  text-decoration: none;
+}
+
+.icon-link:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.header-left {
+  gap: 0.5rem;
 }
 </style>
