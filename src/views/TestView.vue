@@ -218,7 +218,7 @@ onMounted(async () => {
       // Fetch specific cards by ID
       const { data: cards, error: cardsError } = await supabase
         .from('Flashcards')
-        .select('*')
+        .select('*, Categories(name)')
         .in('id', flashcardIds)
       
       if (cardsError) throw cardsError
@@ -251,7 +251,7 @@ onMounted(async () => {
     } else {
       // Start new quiz
       if (selectionType.value === 'Catégorie') {
-        const { data, error } = await supabase.from('Flashcards').select('*').eq('category', selectedCategoryId.value)
+        const { data, error } = await supabase.from('Flashcards').select('*, Categories(name)').eq('category', selectedCategoryId.value)
         if (error) throw error
         selectionCards = data || []
       } else {
@@ -261,7 +261,7 @@ onMounted(async () => {
         if (categoryIds.length > 0) {
           const { data: cards, error: cardsError } = await supabase
             .from('Flashcards')
-            .select('*')
+            .select('*, Categories(name)')
             .in('category', categoryIds)
           
           if (cardsError) throw cardsError
@@ -383,7 +383,7 @@ const failedCards = computed(() => {
               <div v-for="card in failedCards" :key="card.id || card.name" class="review-item">
                 <span class="card-info">
                    <strong class="card-title">{{ card.name }}</strong>
-                   <span class="card-category">{{ card.category }}</span>
+                   <span class="card-category">{{ card.Categories?.name || 'Inconnue' }}</span>
                 </span>
                 <span class="error-badge">À revoir</span>
               </div>
