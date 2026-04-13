@@ -108,7 +108,20 @@ const generateChoices = (field) => {
     const dField = normalize(c[field])
     const dName = normalize(c.name)
     const dDesc = normalize(c.description)
-    return dField !== normCorrect && dName !== normName && dDesc !== normDesc
+    
+    // 1. La valeur du choix doit être différente de la réponse
+    if (dField === normCorrect) return false
+    
+    // 2. Le nom doit être différent
+    if (dName === normName) return false
+    
+    // 3. LA RÈGLE D'OR : On n'exclut sur la description QUE si c'est pertinent.
+    // Si on cherche le Nom ou la Description, alors oui, 
+    // on ne veut pas 2 cartes qui ont la même description.
+    const isTestingNameOrDesc = field === 'name' || field === 'description'
+    if (isTestingNameOrDesc && normDesc && dDesc === normDesc) return false
+    
+    return true
   }
 
   let distractorsPool = allPoolCards.value.filter(c => 
@@ -116,9 +129,11 @@ const generateChoices = (field) => {
     isGoodDistractor(c)
   )
 
+  // Fallback: Si pas assez dans la même catégorie, on pioche dans le même DOMAINE uniquement
   if (distractorsPool.length < 3) {
     const additionalDistractors = allPoolCards.value.filter(c => 
-      c.category !== currentCard.value.category && 
+      c.domain === currentCard.value.domain &&
+      c.category !== currentCard.value.category &&
       isGoodDistractor(c)
     )
     distractorsPool = [...distractorsPool, ...additionalDistractors]
@@ -200,6 +215,19 @@ onMounted(async () => {
   const quizzIdInQuery = route.query.quizzId
   
   try {
+    let poolQuery = supabase.from('Flashcards').select('*, Categories(name)')
+    
+    // Si on a un domaine identifié, on filtre la pioche des distracteurs sur ce domaine
+    // Cela évite de charger des milliers de cartes inutiles et garantit la cohérence.
+    const domainToFetch = quizzIdInQuery ? null : selectedDomainId.value
+    if (domainToFetch) {
+      poolQuery = poolQuery.eq('domain', domainToFetch)
+    }
+
+    const { data: globalPool, error: poolError } = await poolQuery
+    if (poolError) throw poolError
+    allPoolCards.value = globalPool || []
+
     let selectionCards = []
     
     if (quizzIdInQuery) {
@@ -244,8 +272,15 @@ onMounted(async () => {
       
       if (cardsError) throw cardsError
       
+      // On charge les distracteurs du même domaine (pour les 4 propositions)
+      if (cards.length > 0) {
+        const domainId = cards[0].domain
+        const { data: qPool } = await supabase.from('Flashcards').select('*, Categories(name)').eq('domain', domainId)
+        allPoolCards.value = qPool || []
+      }
+
       // Sort cards to match the original pool order stored in flashcardIds
-      selectionCards = flashcardIds.map(id => cards.find(c => c.id === id)).filter(Boolean)
+      selectionCards = flashcardIds.map(id => cards.find(c => id && c && c.id === id)).filter(Boolean)
       
       // Restore score, position and errors
       totalScore.value = Number(qData.score) || 0
@@ -267,7 +302,6 @@ onMounted(async () => {
       // (Though selectionType is usually a computed, we can't change it, 
       // but some components might use it. We'll rely on our data.)
       
-      allPoolCards.value = selectionCards
       quizCards.value = selectionCards
     } else {
       // Start new quiz
@@ -290,8 +324,6 @@ onMounted(async () => {
         }
       }
 
-      // Use only the cards from the selected scope for distractors
-      allPoolCards.value = selectionCards
 
       // SELECTION LOGIC: 70% due, 30% new
       const today = new Date().toISOString()
