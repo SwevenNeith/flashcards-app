@@ -9,6 +9,8 @@ const showForm = ref(false)
 const activeQuizzes = ref([])
 const newCardsCount = ref(0)
 const dueCardsCount = ref(0)
+const dueDomains = ref([])
+const preselectedDomainId = ref(null)
 
 onMounted(async () => {
   const { data, error } = await supabase
@@ -32,6 +34,32 @@ onMounted(async () => {
   
   newCardsCount.value = newRes.count || 0
   dueCardsCount.value = dueRes.count || 0
+
+  // Fetch Revision counts grouped by domain
+  const { data: revData, error: revError } = await supabase
+    .from('Revision')
+    .select(`
+      flashcard,
+      Flashcards (
+        domain,
+        Domaines (id, name)
+      )
+    `)
+    .lte('due_date', today)
+
+  if (!revError && revData) {
+    const map = {}
+    revData.forEach(r => {
+      const d = r.Flashcards?.Domaines
+      if (d) {
+        if (!map[d.id]) {
+          map[d.id] = { id: d.id, name: d.name, count: 0 }
+        }
+        map[d.id].count++
+      }
+    })
+    dueDomains.value = Object.values(map).sort((a, b) => b.count - a.count)
+  }
 })
 
 const handleStartTest = (data) => {
@@ -60,6 +88,16 @@ const resumeQuizz = (quizz) => {
       categoryName: quizz.Categories?.name
     }
   })
+}
+
+const startTestForDomain = (domainId) => {
+  preselectedDomainId.value = domainId
+  showForm.value = true
+}
+
+const closeTestForm = () => {
+  showForm.value = false
+  preselectedDomainId.value = null
 }
 </script>
 
@@ -90,8 +128,23 @@ const resumeQuizz = (quizz) => {
       </p>
 
       <div class="revision-summary cta-section">
-        <p>Vous avez <strong>{{ newCardsCount }}</strong> nouvelles cartes.</p>
-        <p>Vous avez <strong>{{ dueCardsCount }}</strong> cartes à réviser aujourd'hui.</p>
+        <p>
+          <span v-if="newCardsCount > 0" class="summary-icon">✨</span>
+          <span v-else class="summary-icon">✅</span>
+          Vous avez <strong>{{ newCardsCount }}</strong> nouvelles cartes.
+        </p>
+        <p>
+          <span class="summary-icon">🔔</span>
+          Vous avez <strong>{{ dueCardsCount }}</strong> cartes à réviser aujourd'hui.
+        </p>
+      </div>
+
+      <!-- Liste des domaines à réviser -->
+      <div v-if="dueDomains.length > 0" class="due-domains-list cta-section">
+        <div v-for="domain in dueDomains" :key="domain.id" class="due-domain-item">
+          <p>Vous avez <strong>{{ domain.count }}</strong> cartes à réviser en <strong>{{ domain.name }}</strong></p>
+          <button class="domain-test-btn" @click="startTestForDomain(domain.id)">Démarrer un test</button>
+        </div>
       </div>
     </div>
 
@@ -99,7 +152,8 @@ const resumeQuizz = (quizz) => {
     <transition name="fade">
       <TestForm 
         v-if="showForm" 
-        @close="showForm = false"
+        :preselectedDomainId="preselectedDomainId"
+        @close="closeTestForm"
         @start="handleStartTest"
       />
     </transition>
@@ -161,6 +215,48 @@ const resumeQuizz = (quizz) => {
   margin-top: 1rem;
 }
 
+.due-domains-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.due-domain-item {
+  background-color: #f8fbff;
+  border-right: 5px solid #048B9A;
+  padding: 1.25rem;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+}
+
+.domain-test-btn {
+  background-color: #048B9A;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.domain-test-btn:hover {
+  background-color: #037380;
+  transform: translateY(-2px);
+}
+
+.summary-icon {
+  margin-right: 0.5rem;
+  font-size: 1.2rem;
+}
+
 .cta-link {
   color: #048B9A;
   font-weight: 700;
@@ -214,11 +310,11 @@ const resumeQuizz = (quizz) => {
 }
 
 @media (max-width: 600px) {
-  .quizz-card {
+  .quizz-card, .due-domain-item {
     flex-direction: column;
     align-items: flex-start;
   }
-  .resume-btn {
+  .resume-btn, .domain-test-btn {
     width: 100%;
   }
 }

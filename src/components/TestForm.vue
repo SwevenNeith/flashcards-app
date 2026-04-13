@@ -3,6 +3,13 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { useDomainesStore } from '../stores/domaines'
 import { useCategoriesStore } from '../stores/categories'
 
+const props = defineProps({
+  preselectedDomainId: {
+    type: String,
+    default: null
+  }
+})
+
 const emit = defineEmits(['close', 'start'])
 
 const domainesStore = useDomainesStore()
@@ -26,19 +33,29 @@ onMounted(async () => {
   if (domainesStore.domaines.length === 0) {
     await domainesStore.fetchDomaines()
   }
+  
+  if (props.preselectedDomainId) {
+    selectedDomain.value = props.preselectedDomainId
+  }
 })
 
-// Watch for domain change to fetch categories if needed
-watch(selectedDomain, async (newDomain) => {
-  selectedCategory.value = ''
-  if (selectionType.value === 'Catégorie' && newDomain) {
+// Watch for domain change or selection type change to fetch categories
+watch([selectedDomain, selectionType], async ([newDomain, newType]) => {
+  if (newType === 'Catégorie' && newDomain) {
     await categoriesStore.fetchCategories(newDomain)
   }
 })
 
-// Watch for selection type change to clear selections
-watch(selectionType, (newType) => {
-  selectedDomain.value = ''
+// Watch for selection type change to clear categories
+watch(selectionType, () => {
+  if (!props.preselectedDomainId) {
+    selectedDomain.value = ''
+  }
+  selectedCategory.value = ''
+})
+
+// Watch for domain change to clear category
+watch(selectedDomain, () => {
   selectedCategory.value = ''
 })
 
@@ -98,6 +115,7 @@ const handleStart = () => {
             id="domain-select" 
             v-model="selectedDomain" 
             class="styled-select"
+            :disabled="!!props.preselectedDomainId"
           >
             <option value="" disabled>Choisir un domaine...</option>
             <option 
@@ -134,7 +152,7 @@ const handleStart = () => {
 
         <!-- Sélecteur de nombre de questions -->
         <div class="form-group">
-          <label class="main-label">Combien de questions doit avoir le test ?</label>
+          <label class="main-label">Combien de cartes doit avoir le test ?</label>
           <div class="count-selector">
             <button 
               v-for="option in countOptions" 
