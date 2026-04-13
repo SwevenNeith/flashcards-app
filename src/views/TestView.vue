@@ -99,10 +99,22 @@ const generateChoices = (field) => {
   const correctValue = currentCard.value[field]
   
   let distractorsPool = allPoolCards.value.filter(c => 
+    c.category === currentCard.value.category && 
     c.name !== currentCard.value.name && 
     c[field] && 
     c[field] !== correctValue
   )
+
+  // Fallback: if we don't have enough distractors in the same category, 
+  // take from the whole pool (excluding the current category to avoid getting too many)
+  if (distractorsPool.length < 3) {
+    const additionalDistractors = allPoolCards.value.filter(c => 
+      c.category !== currentCard.value.category && 
+      c[field] && 
+      c[field] !== correctValue
+    )
+    distractorsPool = [...distractorsPool, ...additionalDistractors]
+  }
 
   const finalDistractors = []
   const seenValues = new Set([correctValue])
@@ -218,7 +230,7 @@ onMounted(async () => {
       // Fetch specific cards by ID
       const { data: cards, error: cardsError } = await supabase
         .from('Flashcards')
-        .select('*, Categories(name)')
+        .select('*, Categories(name), Revision(maitrise, due_date)')
         .in('id', flashcardIds)
       
       if (cardsError) throw cardsError
@@ -251,7 +263,7 @@ onMounted(async () => {
     } else {
       // Start new quiz
       if (selectionType.value === 'Catégorie') {
-        const { data, error } = await supabase.from('Flashcards').select('*, Categories(name)').eq('category', selectedCategoryId.value)
+        const { data, error } = await supabase.from('Flashcards').select('*, Categories(name), Revision(maitrise, due_date)').eq('category', selectedCategoryId.value)
         if (error) throw error
         selectionCards = data || []
       } else {
@@ -261,7 +273,7 @@ onMounted(async () => {
         if (categoryIds.length > 0) {
           const { data: cards, error: cardsError } = await supabase
             .from('Flashcards')
-            .select('*, Categories(name)')
+            .select('*, Categories(name), Revision(maitrise, due_date)')
             .in('category', categoryIds)
           
           if (cardsError) throw cardsError
@@ -271,7 +283,44 @@ onMounted(async () => {
 
       // Use only the cards from the selected scope for distractors
       allPoolCards.value = selectionCards
-      quizCards.value = shuffleArray(selectionCards).slice(0, requestedCount.value)
+
+      // SELECTION LOGIC: 70% due, 30% new
+      const today = new Date().toISOString()
+      
+      const dueCards = selectionCards.filter(c => {
+        const rev = Array.isArray(c.Revision) ? c.Revision[0] : c.Revision
+        return rev?.due_date && rev.due_date <= today
+      })
+      
+      const newCards = selectionCards.filter(c => {
+        const rev = Array.isArray(c.Revision) ? c.Revision[0] : c.Revision
+        return !rev?.due_date // New cards have no due_date
+      })
+
+      const targetDueCount = Math.floor(requestedCount.value * 0.7)
+      const targetNewCount = requestedCount.value - targetDueCount
+
+      // Sort dueCards by mastery ascending (prioritize lower mastery), 
+      // but shuffle first to vary cards if multiple have same mastery
+      let sortedDuePool = shuffleArray(dueCards).sort((a, b) => {
+        const revA = Array.isArray(a.Revision) ? a.Revision[0] : a.Revision
+        const revB = Array.isArray(b.Revision) ? b.Revision[0] : b.Revision
+        return (revA?.maitrise || 0) - (revB?.maitrise || 0)
+      })
+
+      let selectedDue = sortedDuePool.slice(0, targetDueCount)
+      let selectedNew = shuffleArray(newCards).slice(0, targetNewCount)
+
+      let finalCards = [...selectedDue, ...selectedNew]
+
+      // Fallback: If not enough cards in one category, fill from the other pools
+      if (finalCards.length < requestedCount.value) {
+        const remainingPool = selectionCards.filter(c => !finalCards.find(fc => fc.id === c.id))
+        const extras = shuffleArray(remainingPool).slice(0, requestedCount.value - finalCards.length)
+        finalCards = [...finalCards, ...extras]
+      }
+
+      quizCards.value = shuffleArray(finalCards)
       
       if (quizCards.value.length > 0) {
         // Create tracking record in Quizz table
@@ -326,6 +375,43 @@ const saveAndExit = async () => {
 
     if (error) throw error
     
+    // UPDATE MASTERY and DUE_DATE in Revision table
+    const now = new Date()
+    const intervalMap = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 }
+
+    const updates = quizCards.value.map(async (card) => {
+      const isFailed = failedCards.value.some(fc => fc.id === card.id)
+      const rev = Array.isArray(card.Revision) ? card.Revision[0] : card.Revision
+      let currentMaitrise = rev?.maitrise || 0
+      
+      // Determine new mastery
+      let newMaitrise = isFailed 
+        ? Math.max(0, currentMaitrise - 1)
+        : Math.min(5, currentMaitrise + 1)
+        
+      // Determine new due_date
+      let newDueDate = new Date()
+      if (newMaitrise === 0) {
+        newDueDate = now
+      } else {
+        // Use existing due_date as baseline, or NOW if it was null
+        const baseline = rev?.due_date ? new Date(rev.due_date) : now
+        newDueDate = new Date(baseline)
+        const daysToAdd = intervalMap[newMaitrise]
+        newDueDate.setDate(newDueDate.getDate() + daysToAdd)
+      }
+        
+      return supabase
+        .from('Revision')
+        .update({ 
+          maitrise: newMaitrise,
+          due_date: newDueDate.toISOString().split('T')[0]
+        })
+        .eq('flashcard', card.id)
+    })
+
+    await Promise.all(updates)
+
     // Cleanup: Delete the tracking record as the test is now complete
     if (quizzId.value) {
       await supabase.from('Quizz').delete().eq('id', quizzId.value)

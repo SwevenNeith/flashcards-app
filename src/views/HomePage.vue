@@ -26,7 +26,7 @@ onMounted(async () => {
   const today = new Date().toISOString()
   
   const [newRes, dueRes] = await Promise.all([
-    supabase.from('Revision').select('*', { count: 'exact', head: true }).eq('maitrise', 0),
+    supabase.from('Revision').select('*', { count: 'exact', head: true }).is('due_date', null),
     supabase.from('Revision').select('*', { count: 'exact', head: true }).lte('due_date', today)
   ])
   
