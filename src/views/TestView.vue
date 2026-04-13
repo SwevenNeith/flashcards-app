@@ -98,11 +98,14 @@ const generateChoices = (field) => {
   if (!currentCard.value) return
   const correctValue = currentCard.value[field]
   
+  const normalize = (val) => (typeof val === 'string' ? val.trim() : val)
+  const normCorrect = normalize(correctValue)
+  
   let distractorsPool = allPoolCards.value.filter(c => 
     c.category === currentCard.value.category && 
     c.name !== currentCard.value.name && 
     c[field] && 
-    c[field] !== correctValue
+    normalize(c[field]) !== normCorrect
   )
 
   // Fallback: if we don't have enough distractors in the same category, 
@@ -111,18 +114,19 @@ const generateChoices = (field) => {
     const additionalDistractors = allPoolCards.value.filter(c => 
       c.category !== currentCard.value.category && 
       c[field] && 
-      c[field] !== correctValue
+      normalize(c[field]) !== normCorrect
     )
     distractorsPool = [...distractorsPool, ...additionalDistractors]
   }
 
   const finalDistractors = []
-  const seenValues = new Set([correctValue])
+  const seenValues = new Set([normCorrect])
   
   for (const c of shuffleArray(distractorsPool)) {
-    if (!seenValues.has(c[field])) {
+    const normVal = normalize(c[field])
+    if (!seenValues.has(normVal)) {
       finalDistractors.push(c)
-      seenValues.add(c[field])
+      seenValues.add(normVal)
     }
     if (finalDistractors.length >= 3) break
   }
