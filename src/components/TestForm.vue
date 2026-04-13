@@ -11,8 +11,8 @@ const categoriesStore = useCategoriesStore()
 const selectionType = ref('Domaine') // 'Domaine' or 'Catégorie'
 const selectedDomain = ref('')
 const selectedCategory = ref('')
-const questionCount = ref(5)
-const countOptions = [5, 10, 20]
+const questionCount = ref(10)
+const countOptions = [10, 20, 30]
 
 const sortedDomaines = computed(() => {
   return [...domainesStore.domaines].sort((a, b) => a.name.localeCompare(b.name))

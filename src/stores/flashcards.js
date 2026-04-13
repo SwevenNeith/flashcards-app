@@ -133,7 +133,15 @@ export const useFlashcardsStore = defineStore('flashcards', {
         if (error) throw error
 
         if (data && data[0]) {
-          this.flashcards.unshift(data[0])
+          const newCard = data[0]
+          this.flashcards.unshift(newCard)
+          
+          // Add to Revision table
+          await supabase.from('Revision').insert([{
+            flashcard: newCard.id,
+            maitrise: 0,
+            due_date: null
+          }])
         }
       } catch (e) {
         this.error = e.message
