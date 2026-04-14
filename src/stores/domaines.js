@@ -56,6 +56,8 @@ export const useDomainesStore = defineStore('domaines', {
           .remove([fileName])
           
         if (error) {
+          throw error
+        }
       } catch (e) {
         console.error('Erreur lors de la suppression de l\'icône:', e)
       }
