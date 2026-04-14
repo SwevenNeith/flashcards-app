@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDomainesStore } from '../stores/domaines'
+import { supabase } from '../lib/supabase'
 import DomaineForm from '../components/DomaineForm.vue'
+import DeleteConfirmModal from '../components/DeleteConfirmModal.vue'
 
 const router = useRouter()
 const domainesStore = useDomainesStore()
@@ -12,6 +14,48 @@ const isEditMode = ref(false)
 const editingDomaine = ref(null)
 const selectedLetter = ref(null)
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+
+// Pour le nouveau modal de suppression
+const showDeleteModal = ref(false)
+const domainToDelete = ref(null)
+const categoriesWithCounts = ref([])
+
+const openDeleteModal = async (domain) => {
+  domainToDelete.value = domain
+  
+  // Récupérer les catégories et compter les flashcards pour chacune
+  const { data: categories } = await supabase
+    .from('Categories')
+    .select('id, name')
+    .eq('domain', domain.id)
+  
+  const detailedCategories = []
+  if (categories) {
+    for (const cat of categories) {
+      const { count } = await supabase
+        .from('Flashcards')
+        .select('*', { count: 'exact', head: true })
+        .eq('category', cat.id)
+      
+      detailedCategories.push({
+        id: cat.id,
+        name: cat.name,
+        count: count || 0
+      })
+    }
+  }
+  
+  categoriesWithCounts.value = detailedCategories
+  showDeleteModal.value = true
+}
+
+const handleDeleteConfirm = async () => {
+  if (domainToDelete.value) {
+    await domainesStore.deleteDomaine(domainToDelete.value.name)
+  }
+  showDeleteModal.value = false
+  domainToDelete.value = null
+}
 
 onMounted(async () => {
   await domainesStore.fetchDomaines()
@@ -156,6 +200,14 @@ const handleAddDomaine = async (domainData) => {
       />
     </transition>
 
+    <DeleteConfirmModal
+      :show="showDeleteModal"
+      :domain-name="domainToDelete?.name || ''"
+      :categories="categoriesWithCounts"
+      @close="showDeleteModal = false"
+      @confirm="handleDeleteConfirm"
+    />
+
 
     <div class="domaines-list">
       <div v-if="filteredDomaines.length === 0" class="empty-state">
@@ -173,7 +225,7 @@ const handleAddDomaine = async (domainData) => {
             <button 
               v-if="isEditMode" 
               class="inline-delete-btn" 
-              @click.stop="domainesStore.deleteDomaine(domaine.name)"
+              @click.stop="openDeleteModal(domaine)"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />

@@ -51,16 +51,11 @@ export const useDomainesStore = defineStore('domaines', {
       
       try {
         const fileName = url.split('/').pop()
-        console.log('Tentative de suppression de l\'icône:', fileName)
         const { error } = await supabase.storage
           .from('domain-icon')
           .remove([fileName])
           
         if (error) {
-          console.error('Erreur Supabase Storage DELETE:', error)
-          throw error
-        }
-        console.log('Icône supprimée avec succès du bucket')
       } catch (e) {
         console.error('Erreur lors de la suppression de l\'icône:', e)
       }
@@ -195,27 +190,79 @@ export const useDomainesStore = defineStore('domaines', {
     },
 
     async deleteDomaine(name) {
+      const domainToDelete = this.domaines.find(d => d.name === name)
+      if (!domainToDelete) return
+      
+      const domainId = domainToDelete.id
+      const oldIcon = domainToDelete.icon
+
       this.loading = true
       try {
-        const domainToDelete = this.domaines.find(d => d.name === name)
-        const oldIcon = domainToDelete?.icon
+        // 1. Récupérer les informations des catégories pour le nettoyage futur des icônes
+        const { data: categories } = await supabase
+          .from('Categories')
+          .select('id, name, icon')
+          .eq('domain', domainId)
 
-        const { error } = await supabase
-          .from('Domaines')
-          .delete()
-          .eq('name', name)
-
-        if (error) throw error
+        // 2. Identifier toutes les flashcards impactées
+        const { data: flashcards } = await supabase
+          .from('Flashcards')
+          .select('id')
+          .eq('domain', domainId)
         
-        // Supprimer l'icône du stockage si elle existe
-        if (oldIcon) {
-          await this._deleteIcon(oldIcon)
+        const flashcardIds = flashcards?.map(f => f.id) || []
+
+        if (flashcardIds.length > 0) {
+          // 3. Supprimer les Révisions
+          const { error: revError } = await supabase
+            .from('Revision')
+            .delete()
+            .in('flashcard', flashcardIds)
+          if (revError) throw revError
         }
 
-        this.domaines = this.domaines.filter(d => d.name !== name)
+        // 5. Supprimer les flashcards
+        const { error: flashError } = await supabase
+          .from('Flashcards')
+          .delete()
+          .eq('domain', domainId)
+        if (flashError) throw flashError
+
+        // 6. Supprimer les catégories
+        const { error: catError } = await supabase
+          .from('Categories')
+          .delete()
+          .eq('domain', domainId)
+        if (catError) throw catError
+
+        // 7. Supprimer le domaine
+        const { error: domError } = await supabase
+          .from('Domaines')
+          .delete()
+          .eq('id', domainId)
+        if (domError) throw domError
+        
+        // 8. Nettoyage des icônes dans le Storage
+        if (oldIcon) await this._deleteIcon(oldIcon)
+        
+        if (categories && categories.length > 0) {
+          for (const cat of categories) {
+            if (cat.icon && cat.icon.includes('/public/category-icon/')) {
+              try {
+                const fileName = cat.icon.split('/').pop()
+                await supabase.storage.from('category-icon').remove([fileName])
+              } catch (err) {
+                console.error('Erreur suppression icône catégorie:', err)
+              }
+            }
+          }
+        }
+
+        this.domaines = this.domaines.filter(d => d.id !== domainId)
       } catch (e) {
         this.error = e.message
-        console.error('Erreur lors de la suppression du domaine:', e)
+        console.error('Échec de la suppression cascade:', e)
+        alert('Erreur lors de la suppression : ' + e.message)
       } finally {
         this.loading = false
       }

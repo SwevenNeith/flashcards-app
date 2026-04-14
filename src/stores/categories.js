@@ -214,34 +214,54 @@ export const useCategoriesStore = defineStore('categories', {
       }
     },
 
-    async deleteCategory(name, domainName) {
-      if (!domainName) return
+    async deleteCategory(categoryId, domainName) {
+      if (!domainName || !categoryId) return
       
       this.loading = true
       try {
-        const categoryToDelete = this.categories.find(c => c.name === name)
-        const oldIcon = categoryToDelete?.icon
+        const categoryToDelete = this.categories.find(c => c.id === categoryId)
+        if (!categoryToDelete) return
+        const oldIcon = categoryToDelete.icon
 
-        // Resolve domain ID
-        const { data: domData } = await supabase.from('Domaines').select('id').eq('name', domainName).single()
-        if (!domData) throw new Error('Domaine introuvable')
+        // 1. Récupérer les flashcards pour supprimer leurs révisions
+        const { data: flashcards } = await supabase
+          .from('Flashcards')
+          .select('id')
+          .eq('category', categoryId)
+        
+        if (flashcards && flashcards.length > 0) {
+          const flashcardIds = flashcards.map(f => f.id)
+          const { error: revError } = await supabase
+            .from('Revision')
+            .delete()
+            .in('flashcard', flashcardIds)
+          if (revError) throw revError
+        }
 
-        const { error } = await supabase
+        // 2. Supprimer les flashcards
+        const { error: flashError } = await supabase
+          .from('Flashcards')
+          .delete()
+          .eq('category', categoryId)
+        if (flashError) throw flashError
+
+        // 3. Supprimer la catégorie elle-même
+        const { error: catError } = await supabase
           .from('Categories')
           .delete()
-          .eq('name', name)
-          .eq('domain', domData.id)
-
-        if (error) throw error
+          .eq('id', categoryId)
+        if (catError) throw catError
         
+        // 4. Nettoyage icône
         if (oldIcon) {
           await this._deleteIcon(oldIcon)
         }
 
-        this.categories = this.categories.filter(c => c.name !== name)
+        this.categories = this.categories.filter(c => c.id !== categoryId)
       } catch (e) {
         this.error = e.message
         console.error('Erreur lors de la suppression de la catégorie:', e)
+        alert('Erreur lors de la suppression : ' + e.message)
       } finally {
         this.loading = false
       }

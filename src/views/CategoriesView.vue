@@ -2,7 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCategoriesStore } from '../stores/categories'
+import { supabase } from '../lib/supabase'
 import CategoryForm from '../components/CategoryForm.vue'
+import CategoryDeleteModal from '../components/CategoryDeleteModal.vue'
 
 const props = defineProps({
   domainName: {
@@ -20,6 +22,32 @@ const isEditMode = ref(false)
 const editingCategory = ref(null)
 const selectedLetter = ref(null)
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+
+// Modal de suppression
+const showDeleteModal = ref(false)
+const categoryToDelete = ref(null)
+const flashcardCount = ref(0)
+
+const openDeleteModal = async (category) => {
+  categoryToDelete.value = category
+  
+  // Compter les flashcards
+  const { count } = await supabase
+    .from('Flashcards')
+    .select('*', { count: 'exact', head: true })
+    .eq('category', category.id)
+  
+  flashcardCount.value = count || 0
+  showDeleteModal.value = true
+}
+
+const handleDeleteConfirm = async () => {
+  if (categoryToDelete.value) {
+    await categoriesStore.deleteCategory(categoryToDelete.value.id, props.domainName)
+  }
+  showDeleteModal.value = false
+  categoryToDelete.value = null
+}
 
 onMounted(async () => {
   await categoriesStore.fetchCategories(props.domainName)
@@ -164,6 +192,14 @@ const handleAddCategory = async (categoryData) => {
       />
     </transition>
 
+    <CategoryDeleteModal
+      :show="showDeleteModal"
+      :category-name="categoryToDelete?.name || ''"
+      :flashcard-count="flashcardCount"
+      @close="showDeleteModal = false"
+      @confirm="handleDeleteConfirm"
+    />
+
     <div class="categories-list">
       <div v-if="filteredCategories.length === 0" class="empty-state">
         <p v-if="searchQuery">Aucune catégorie ne correspond à votre recherche.</p>
@@ -180,7 +216,7 @@ const handleAddCategory = async (categoryData) => {
             <button 
               v-if="isEditMode" 
               class="inline-delete-btn" 
-              @click.stop="categoriesStore.deleteCategory(category.name, props.domainName)"
+              @click.stop="openDeleteModal(category)"
             >
               <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />

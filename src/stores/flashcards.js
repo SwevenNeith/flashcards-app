@@ -208,28 +208,41 @@ export const useFlashcardsStore = defineStore('flashcards', {
       this.loading = true
       try {
         const flashcardToDelete = this.flashcards.find(f => f.name === name)
-        const oldIcon = flashcardToDelete?.icon
+        if (!flashcardToDelete) return
 
-        // Resolve category ID
+        const oldIcon = flashcardToDelete.icon
+        const flashcardId = flashcardToDelete.id
+
+        // 1. Resolve category ID
         const { data: catData } = await supabase.from('Categories').select('id').eq('name', categoryName).single()
         if (!catData) throw new Error('Catégorie introuvable')
 
-        const { error } = await supabase
+        // 2. Delete entry from Revision table first (to avoid foreign key conflict)
+        const { error: revisionError } = await supabase
+          .from('Revision')
+          .delete()
+          .eq('flashcard', flashcardId)
+        
+        if (revisionError) throw revisionError
+
+        // 3. Delete from Flashcards table
+        const { error: flashcardError } = await supabase
           .from('Flashcards')
           .delete()
-          .eq('name', name)
-          .eq('category', catData.id)
+          .eq('id', flashcardId)
 
-        if (error) throw error
+        if (flashcardError) throw flashcardError
         
+        // 4. Cleanup icon if exists
         if (oldIcon) {
           await this._deleteIcon(oldIcon)
         }
 
-        this.flashcards = this.flashcards.filter(f => f.name !== name)
+        this.flashcards = this.flashcards.filter(f => f.id !== flashcardId)
       } catch (e) {
         this.error = e.message
         console.error('Erreur lors de la suppression de la flashcard:', e)
+        alert('Erreur lors de la suppression : ' + e.message)
       } finally {
         this.loading = false
       }
