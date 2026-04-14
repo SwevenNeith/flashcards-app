@@ -199,7 +199,7 @@ const handleChoice = (choice, index) => {
     }
 
     setupNextQuestion()
-  }, 3000)
+  }, 1000)
 }
 
 const goToNextCard = () => {
