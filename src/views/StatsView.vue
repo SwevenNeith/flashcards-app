@@ -493,7 +493,15 @@ onMounted(async () => {
   }
   .filters-section {
     flex-direction: column;
+    align-items: stretch;
     gap: 1rem;
+  }
+  .total-badge-container {
+    width: 100%;
+    padding-bottom: 0;
+  }
+  .total-tests-badge {
+    width: 100%;
   }
 }
 </style>
