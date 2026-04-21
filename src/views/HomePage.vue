@@ -275,7 +275,7 @@ const closeTestForm = () => {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .quizz-info {
@@ -297,7 +297,7 @@ const closeTestForm = () => {
 }
 
 .resume-btn:hover {
-  background-color: #DFC6A4;
+  background-color: #DCB160;
   transform: translateY(-2px);
 }
 

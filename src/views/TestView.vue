@@ -606,7 +606,7 @@ const failedCards = computed(() => {
   background: #91576C;
   padding: 3rem 2.5rem;
   border-radius: 24px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.06);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
   text-align: center;
   max-width: 500px;
   width: 100%;
@@ -805,7 +805,7 @@ const failedCards = computed(() => {
 }
 
 .next-card-btn:hover {
-  background-color: #DFC6A4;
+  background-color: #DCB160;
   transform: translateX(5px);
 }
 

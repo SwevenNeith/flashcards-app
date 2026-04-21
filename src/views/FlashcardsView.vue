@@ -176,7 +176,7 @@ const handleAddFlashcard = async (flashcardData) => {
           placeholder="Rechercher une flashcard..." 
           class="search-input"
         />
-        <svg v-if="!searchQuery" class="search-icon" viewBox="0 0 24 24" width="20" height="20">
+        <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20">
           <path fill="currentColor" d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14.71L19.5,19.5L21,21L19.5,22.5L18,21L13.23,16.23L12.23,15.71C11.09,16.68 9.61,17.27 8,17.27A6.5,6.5 0 0,1 1.5,10.77A6.5,6.5 0 0,1 8,4.27M8,6.27A4.5,4.5 0 0,0 3.5,10.77A4.5,4.5 0 0,0 8,15.27A4.5,4.5 0 0,0 12.5,10.77A4.5,4.5 0 0,0 8,6.27Z" />
         </svg>
       </div>
@@ -361,6 +361,7 @@ const handleAddFlashcard = async (flashcardData) => {
   font-size: 1rem;
   outline: none;
   background-color: #91576C;
+  color: #C2BAD3;
   transition: border-color 0.2s;
 }
 
