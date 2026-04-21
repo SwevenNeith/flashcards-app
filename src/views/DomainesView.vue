@@ -436,12 +436,17 @@ const handleAddDomaine = async (domainData) => {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .domaine-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 8px;
 }
 

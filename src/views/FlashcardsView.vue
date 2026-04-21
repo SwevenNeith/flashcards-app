@@ -509,12 +509,17 @@ const handleAddFlashcard = async (flashcardData) => {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .flashcard-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 8px;
 }
 
@@ -648,16 +653,20 @@ const handleAddFlashcard = async (flashcardData) => {
 .flashcard-modal-icon {
   width: 120px;
   height: 120px;
-  border-radius: 50%;
+  border-radius: 12px;
   overflow: hidden;
   margin-bottom: 1rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .flashcard-modal-icon img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .flashcard-modal-title {
