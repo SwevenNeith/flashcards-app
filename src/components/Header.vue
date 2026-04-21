@@ -58,7 +58,7 @@ const goBack = () => {
 
 <style scoped>
 .main-header {
-  background-color: #048B9A; /* Blue Duck / Teal */
+  background-color: #DFC6A4; /* Blue Duck / Teal */
   color: white;
   padding: 0 1rem;
   height: 60px;

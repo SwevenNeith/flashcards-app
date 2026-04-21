@@ -485,7 +485,7 @@ const failedCards = computed(() => {
         <div class="message-card">
           <div class="test-icon">
             <svg viewBox="0 0 24 24" width="48" height="48">
-              <path fill="#048B9A" d="M13,9.5H11V5.5H13M13,17.5H11V13.5H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+              <path fill="#DFC6A4" d="M13,9.5H11V5.5H13M13,17.5H11V13.5H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
             </svg>
           </div>
           <h2>Préparation du quiz...</h2>
@@ -590,7 +590,7 @@ const failedCards = computed(() => {
   flex-direction: column;
   flex: 1;
   width: 100%;
-  background-color: #f8f9fa;
+  background-color: #91576C;
   /* Allow natural document scroll instead of internal container scroll */
 }
 
@@ -603,7 +603,7 @@ const failedCards = computed(() => {
 }
 
 .message-card {
-  background: white;
+  background: #91576C;
   padding: 3rem 2.5rem;
   border-radius: 24px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.06);
@@ -622,19 +622,19 @@ const failedCards = computed(() => {
 }
 
 .score-card {
-  background: white;
+  background: #91576C;
   margin-top: 2rem;
   padding: 3rem 2rem;
   border-radius: 32px;
   box-shadow: 0 15px 45px rgba(0,0,0,0.05);
   text-align: center;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #DFC6A4;
 }
 
 .score-circle {
   width: 120px;
   height: 120px;
-  border: 8px solid #048B9A;
+  border: 8px solid #DFC6A4;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -646,13 +646,13 @@ const failedCards = computed(() => {
 .score-value {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #2c3e50;
+  color: #C2BAD3;
   line-height: 1;
 }
 
 .score-total {
   font-size: 1rem;
-  color: #666;
+  color: #C2BAD3;
   font-weight: 600;
 }
 
@@ -662,7 +662,7 @@ const failedCards = computed(() => {
 
 .review-section h3 {
   font-size: 1.1rem;
-  color: #666;
+  color: #C2BAD3;
   margin-bottom: 1.5rem;
   text-align: center;
   font-weight: 600;
@@ -683,7 +683,7 @@ const failedCards = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #DFC6A4;
   box-shadow: 0 2px 8px rgba(0,0,0,0.02);
 }
 
@@ -696,13 +696,13 @@ const failedCards = computed(() => {
 
 .card-title {
   font-weight: 700;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-size: 1rem;
 }
 
 .card-category {
   font-size: 0.75rem;
-  color: #048B9A;
+  color: #DFC6A4;
   font-weight: 600;
 }
 
@@ -728,9 +728,9 @@ const failedCards = computed(() => {
 }
 
 .quiz-progress-bar { padding: 1rem 0; }
-.progress-text { font-weight: 700; color: #048B9A; font-size: 0.9rem; display: block; margin-bottom: 0.5rem; }
+.progress-text { font-weight: 700; color: #DFC6A4; font-size: 0.9rem; display: block; margin-bottom: 0.5rem; }
 .progress-track { height: 6px; background-color: #eee; border-radius: 3px; }
-.progress-fill { height: 100%; background-color: #048B9A; transition: width 0.3s ease; }
+.progress-fill { height: 100%; background-color: #DFC6A4; transition: width 0.3s ease; }
 
 .quiz-body {
   display: flex;
@@ -739,20 +739,20 @@ const failedCards = computed(() => {
   align-items: center;
   width: 100%;
 }
-.flashcard-display { width: 100%; background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+.flashcard-display { width: 100%; background: #91576C; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #DFC6A4; min-height: 200px; display: flex; align-items: center; justify-content: center; }
 .active-card { text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-.card-icon { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background-color: #f5f5f5; display: flex; align-items: center; justify-content: center; }
+.card-icon { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background-color: #91576C; display: flex; align-items: center; justify-content: center; }
 .card-icon img { width: 100%; height: 100%; object-fit: contain; }
-.card-name { font-size: 1.6rem; color: #2c3e50; margin: 0; }
-.card-desc { font-size: 1rem; color: #555; text-align: left; width: 100%; max-width: 500px; border-top: 1px solid #eee; padding-top: 1rem; }
+.card-name { font-size: 1.6rem; color: #C2BAD3; margin: 0; }
+.card-desc { font-size: 1rem; color: #C2BAD3; text-align: left; width: 100%; max-width: 500px; border-top: 1px solid #DFC6A4; padding-top: 1rem; }
 
 .choices-panel { width: 100%; display: flex; flex-direction: column; gap: 1rem; }
-.choice-instruction { font-weight: 600; color: #666; text-align: center; }
+.choice-instruction { font-weight: 600; color: #C2BAD3; text-align: center; }
 .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
 .choice-btn {
-  background: white;
-  border: 2px solid #eee;
+  background: #91576C;
+  border: 2px solid #DFC6A4;
   border-radius: 16px;
   padding: 1rem;
   cursor: pointer;
@@ -766,20 +766,20 @@ const failedCards = computed(() => {
   -webkit-tap-highlight-color: transparent;
 }
 
-.choice-btn:focus, .choice-btn:focus-visible { outline: none; border-color: #eee; }
+.choice-btn:focus, .choice-btn:focus-visible { outline: none; border-color: #DFC6A4; }
 
 @media (hover: hover) {
-  .choice-btn:hover:not(.disabled) { border-color: #048B9A; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(4,139,154,0.1); }
+  .choice-btn:hover:not(.disabled) { border-color: #DFC6A4; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(4,139,154,0.1); }
 }
 
 .choice-btn.correct { border-color: #2ed573 !important; background-color: #f0fff4; color: #2ed573; box-shadow: 0 0 15px rgba(46, 213, 115, 0.2); }
-.choice-btn.incorrect { border-color: #ff4757 !important; background-color: #fff5f5; color: #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.2); }
+.choice-btn.incorrect { border-color: #ff4757 !important; background-color: #91576C; color: #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.2); }
 .choice-btn.disabled { cursor: default; opacity: 0.7; }
 
-.choice-icon { width: 60px; height: 60px; background-color: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.choice-icon { width: 60px; height: 60px; background-color: #91576C; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .choice-icon img { width: 100%; height: 100%; object-fit: contain; }
-.choice-text { font-size: 1rem; font-weight: 600; color: #2c3e50; text-align: center; }
-.choice-html { font-size: 0.85rem; color: #555; text-align: left; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.choice-text { font-size: 1rem; font-weight: 600; color: #C2BAD3; text-align: center; }
+.choice-html { font-size: 0.85rem; color: #C2BAD3; text-align: left; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 .card-actions {
   width: 100%;
@@ -790,7 +790,7 @@ const failedCards = computed(() => {
 }
 
 .next-card-btn {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -805,12 +805,12 @@ const failedCards = computed(() => {
 }
 
 .next-card-btn:hover {
-  background-color: #037380;
+  background-color: #DFC6A4;
   transform: translateX(5px);
 }
 
-.finish-btn, .return-btn { background-color: #048B9A; color: white; border: none; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: all 0.2s; margin-top: 1rem; }
-.finish-btn:hover, .return-btn:hover { background-color: #037380; transform: translateY(-2px); }
+.finish-btn, .return-btn { background-color: #DFC6A4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: all 0.2s; margin-top: 1rem; }
+.finish-btn:hover, .return-btn:hover { background-color: #DFC6A4; transform: translateY(-2px); }
 
 .reveal { animation: slideDownIn 0.4s ease-out; }
 @keyframes slideDownIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }

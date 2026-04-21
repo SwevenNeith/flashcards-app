@@ -280,16 +280,16 @@ const handleAddDomaine = async (domainData) => {
 .search-input {
   width: 100%;
   padding: 0.85rem 1rem 0.85rem 2.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 12px;
   font-size: 1rem;
   outline: none;
-  background-color: white;
+  background-color: #91576C;
   transition: border-color 0.2s;
 }
 
 .search-input:focus {
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 .search-icon {
@@ -297,7 +297,7 @@ const handleAddDomaine = async (domainData) => {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa;
+  color: #C2BAD3;
 }
 
 .alphabet-filter {
@@ -316,10 +316,10 @@ const handleAddDomaine = async (domainData) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #eee;
+  border: 1px solid #DFC6A4;
   border-radius: 8px;
-  background: white;
-  color: #666;
+  background: #91576C;
+  color: #C2BAD3;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -332,21 +332,21 @@ const handleAddDomaine = async (domainData) => {
 }
 
 .letter-btn:hover {
-  border-color: #048B9A;
-  color: #048B9A;
-  background-color: #f0f7f8;
+  border-color: #DFC6A4;
+  color: #DFC6A4;
+  background-color: #91576C;
 }
 
 .letter-btn.active {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
-  border-color: #048B9A;
+  border-color: #DFC6A4;
   box-shadow: 0 4px 10px rgba(4, 139, 154, 0.2);
 }
 
 .add-button {
   flex: 1;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   padding: 0.75rem 1.25rem;
@@ -359,13 +359,13 @@ const handleAddDomaine = async (domainData) => {
 
 
 .add-button.active {
-  background-color: #2c3e50;
+  background-color: #C2BAD3;
 }
 
 .edit-toggle-btn {
-  background-color: #f1f2f6;
+  background-color: #91576C;
   color: #ffa502; /* Orange */
-  border: 1px solid #eee;
+  border: 1px solid #DFC6A4;
   padding: 0.75rem;
   border-radius: 12px;
   cursor: pointer;
@@ -376,7 +376,7 @@ const handleAddDomaine = async (domainData) => {
 }
 
 .edit-toggle-btn:hover {
-  background-color: #fff4e5;
+  background-color: #91576C;
 }
 
 .edit-toggle-btn.active {
@@ -392,7 +392,7 @@ const handleAddDomaine = async (domainData) => {
 }
 
 .domaine-card {
-  background: white;
+  background: #91576C;
   padding: 1rem 1.25rem;
   border-radius: 16px;
   display: flex;
@@ -400,13 +400,13 @@ const handleAddDomaine = async (domainData) => {
   align-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #DFC6A4;
   transition: all 0.2s;
 }
 
 .domaine-card:hover {
   transform: translateX(4px);
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 .domaine-content {
@@ -436,7 +436,7 @@ const handleAddDomaine = async (domainData) => {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  background-color: #f5f5f5;
+  background-color: #91576C;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -453,13 +453,13 @@ const handleAddDomaine = async (domainData) => {
 .domaine-name {
   margin: 0;
   font-size: 1.1rem;
-  color: #2c3e50;
+  color: #C2BAD3;
 }
 
 .domaine-desc {
   margin: 0.1rem 0 0 0;
   font-size: 0.85rem;
-  color: #888;
+  color: #C2BAD3;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   line-clamp: 1;
@@ -475,13 +475,13 @@ const handleAddDomaine = async (domainData) => {
 }
 
 .chevron-icon {
-  color: #ccc;
+  color: #C2BAD3;
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 1rem;
-  color: #aaa;
+  color: #C2BAD3;
 }
 
 @media (max-width: 600px) {

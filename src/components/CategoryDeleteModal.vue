@@ -75,7 +75,7 @@ defineEmits(['close', 'confirm'])
 
 .modal-header h3 {
   margin-top: 0;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-size: 1.25rem;
 }
 
@@ -88,7 +88,7 @@ defineEmits(['close', 'confirm'])
 .warning-text {
   margin-top: 10px;
   padding: 10px;
-  background-color: #fff5f5;
+  background-color: #91576C;
   border-left: 4px solid #f56565;
   border-radius: 4px;
 }

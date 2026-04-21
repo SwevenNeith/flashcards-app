@@ -171,7 +171,7 @@ const handleSubmit = () => {
 }
 
 .modal-card {
-  background-color: white;
+  background-color: #91576C;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
@@ -188,7 +188,7 @@ const handleSubmit = () => {
 
 .form-header {
   padding: 1.25rem 1.5rem;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   display: flex;
   justify-content: space-between;
@@ -221,7 +221,7 @@ const handleSubmit = () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -230,7 +230,7 @@ input[type="text"],
 textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s;
@@ -239,7 +239,7 @@ textarea {
 input[type="text"]:focus,
 textarea:focus {
   outline: none;
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 .icon-upload-container {
@@ -251,7 +251,7 @@ textarea:focus {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background-color: #91576C;
 }
 
 .icon-preview {
@@ -288,7 +288,7 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #666;
+  color: #C2BAD3;
   cursor: pointer;
 }
 
@@ -310,10 +310,10 @@ textarea:focus {
 .cancel-btn {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  background-color: white;
+  border: 1px solid #DFC6A4;
+  background-color: #91576C;
   border-radius: 8px;
-  color: #666;
+  color: #C2BAD3;
   font-weight: 600;
   cursor: pointer;
 }
@@ -322,7 +322,7 @@ textarea:focus {
   flex: 2;
   padding: 0.75rem;
   border: none;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -330,11 +330,11 @@ textarea:focus {
 }
 
 .submit-btn:hover {
-  background-color: #037380;
+  background-color: #DCB160;
 }
 
 .submit-btn:disabled {
-  background: #a4d2d8;
+  background: #e8d8c2;
   cursor: not-allowed;
 }
 </style>

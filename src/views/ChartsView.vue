@@ -122,8 +122,8 @@ const chartData = computed(() => {
     datasets: [
       {
         label: 'Score (%)',
-        backgroundColor: '#048B9A',
-        borderColor: '#048B9A',
+        backgroundColor: '#DFC6A4',
+        borderColor: '#DFC6A4',
         data: data,
         tension: 0.3,
         fill: false,
@@ -163,9 +163,13 @@ const chartOptions = {
       title: {
         display: true,
         text: 'Date',
+        color: '#C2BAD3',
         font: {
           weight: 'bold'
         }
+      },
+      ticks: {
+        color: '#C2BAD3'
       },
       grid: {
         display: false
@@ -175,6 +179,7 @@ const chartOptions = {
       min: 0,
       max: 110, // Gives empty space at the top
       ticks: {
+        color: '#C2BAD3',
         stepSize: 10, // Force clear steps
         callback: (value) => {
           if (value > 100) return null // Hide labels above 100
@@ -184,6 +189,7 @@ const chartOptions = {
       title: {
         display: true,
         text: 'Score (%)',
+        color: '#C2BAD3',
         font: {
           weight: 'bold'
         }
@@ -195,6 +201,9 @@ const chartOptions = {
       display: false
     },
     tooltip: {
+      titleColor: '#C2BAD3',
+      bodyColor: '#C2BAD3',
+      footerColor: '#C2BAD3',
       callbacks: {
         title: (items) => {
           if (!items.length) return ''
@@ -315,7 +324,7 @@ onMounted(async () => {
         </div>
         <div v-else class="empty-chart">
           <svg viewBox="0 0 24 24" width="60" height="60">
-            <path fill="#ddd" d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z" />
+            <path fill="#C2BAD3" d="M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z" />
           </svg>
           <p>Pas assez de données pour générer un graphique (min. 2 tests).</p>
         </div>
@@ -342,7 +351,7 @@ onMounted(async () => {
 .header-actions h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-weight: 800;
 }
 
@@ -350,7 +359,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #048B9A;
+  color: #DFC6A4;
   text-decoration: none;
   font-weight: 700;
   transition: transform 0.2s;
@@ -361,7 +370,7 @@ onMounted(async () => {
 }
 
 .filters-card {
-  background: white;
+  background: #91576C;
   padding: 1.5rem;
   border-radius: 20px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
@@ -369,7 +378,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #DFC6A4;
 }
 
 .filter-row {
@@ -386,7 +395,7 @@ onMounted(async () => {
 
 .filter-group label {
   font-weight: 700;
-  color: #048B9A;
+  color: #DFC6A4;
   font-size: 0.9rem;
 }
 
@@ -396,7 +405,7 @@ onMounted(async () => {
 
 .range-selector {
   display: flex;
-  background: #f0f2f5;
+  background: #462A39;
   padding: 4px;
   border-radius: 12px;
   gap: 4px;
@@ -409,33 +418,33 @@ onMounted(async () => {
   padding: 0.6rem;
   border-radius: 9px;
   font-weight: 700;
-  color: #666;
+  color: #C2BAD3;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 0.85rem;
 }
 
 .range-selector button.active {
-  background: white;
-  color: #048B9A;
+  background: #DFC6A4;
+  color: #ffffff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .styled-select {
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 12px;
   font-size: 1rem;
-  color: #2c3e50;
-  background-color: #f9f9f9;
+  color: #C2BAD3;
+  background-color: #91576C;
 }
 
 .chart-wrapper {
-  background: white;
+  background: #91576C;
   padding: 2rem;
   border-radius: 24px;
   box-shadow: 0 8px 30px rgba(0,0,0,0.05);
-  border: 1px solid #f0f0f0;
+  border: 1px solid #DFC6A4;
   min-height: 400px;
   display: flex;
   flex-direction: column;
@@ -463,14 +472,14 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 4rem;
-  background: white;
+  background: #91576C;
   border-radius: 24px;
   width: 100%;
 }
 
 .loader {
   border: 4px solid #f3f3f3;
-  border-top: 4px solid #048B9A;
+  border-top: 4px solid #DFC6A4;
   border-radius: 50%;
   width: 40px;
   height: 40px;

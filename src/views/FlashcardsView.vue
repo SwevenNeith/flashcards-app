@@ -356,16 +356,16 @@ const handleAddFlashcard = async (flashcardData) => {
 .search-input {
   width: 100%;
   padding: 0.85rem 1rem 0.85rem 2.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 12px;
   font-size: 1rem;
   outline: none;
-  background-color: white;
+  background-color: #91576C;
   transition: border-color 0.2s;
 }
 
 .search-input:focus {
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 .search-icon {
@@ -373,7 +373,7 @@ const handleAddFlashcard = async (flashcardData) => {
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa;
+  color: #C2BAD3;
 }
 
 .action-buttons {
@@ -384,7 +384,7 @@ const handleAddFlashcard = async (flashcardData) => {
 
 .add-button {
   flex: 1;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   padding: 0.75rem 1.25rem;
@@ -396,13 +396,13 @@ const handleAddFlashcard = async (flashcardData) => {
 }
 
 .add-button.active {
-  background-color: #2c3e50;
+  background-color: #C2BAD3;
 }
 
 .edit-toggle-btn {
-  background-color: #f1f2f6;
+  background-color: #91576C;
   color: #ffa502;
-  border: 1px solid #eee;
+  border: 1px solid #DFC6A4;
   padding: 0.75rem;
   border-radius: 12px;
   cursor: pointer;
@@ -413,7 +413,7 @@ const handleAddFlashcard = async (flashcardData) => {
 }
 
 .edit-toggle-btn:hover {
-  background-color: #fff4e5;
+  background-color: #91576C;
 }
 
 .edit-toggle-btn.active {
@@ -436,10 +436,10 @@ const handleAddFlashcard = async (flashcardData) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #eee;
+  border: 1px solid #DFC6A4;
   border-radius: 8px;
-  background: white;
-  color: #666;
+  background: #91576C;
+  color: #C2BAD3;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -452,14 +452,14 @@ const handleAddFlashcard = async (flashcardData) => {
 }
 
 .letter-btn:hover {
-  border-color: #048B9A;
-  color: #048B9A;
+  border-color: #DFC6A4;
+  color: #DFC6A4;
 }
 
 .letter-btn.active {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 .flashcards-list {
@@ -469,7 +469,7 @@ const handleAddFlashcard = async (flashcardData) => {
 }
 
 .flashcard-card {
-  background: white;
+  background: #91576C;
   padding: 1rem 1.25rem;
   border-radius: 16px;
   display: flex;
@@ -477,13 +477,13 @@ const handleAddFlashcard = async (flashcardData) => {
   align-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   cursor: pointer;
-  border: 1px solid #f0f0f0;
+  border: 1px solid #DFC6A4;
   transition: all 0.2s;
 }
 
 .flashcard-card:hover {
   transform: translateX(4px);
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 .flashcard-content {
@@ -509,7 +509,7 @@ const handleAddFlashcard = async (flashcardData) => {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
-  background-color: #f5f5f5;
+  background-color: #91576C;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -526,13 +526,13 @@ const handleAddFlashcard = async (flashcardData) => {
 .flashcard-name {
   margin: 0;
   font-size: 1.1rem;
-  color: #2c3e50;
+  color: #C2BAD3;
 }
 
 .flashcard-desc {
   margin: 0.1rem 0 0 0;
   font-size: 0.85rem;
-  color: #888;
+  color: #C2BAD3;
   /* Aperçu sur une seule ligne avec "..." si trop long */
   overflow: hidden;
   text-overflow: ellipsis;
@@ -556,13 +556,13 @@ const handleAddFlashcard = async (flashcardData) => {
 }
 
 .chevron-icon {
-  color: #ccc;
+  color: #C2BAD3;
 }
 
 .empty-state {
   text-align: center;
   padding: 4rem 1rem;
-  color: #aaa;
+  color: #C2BAD3;
 }
 
 .fade-enter-active, .fade-leave-active {
@@ -587,7 +587,7 @@ const handleAddFlashcard = async (flashcardData) => {
 
 .flashcard-modal-card {
   position: relative;
-  background-color: #ffffff;
+  background-color: #91576C;
   width: 100%;
   max-width: 480px;
   max-height: 90vh;
@@ -608,7 +608,7 @@ const handleAddFlashcard = async (flashcardData) => {
   border-radius: 999px;
   border: none;
   background-color: rgba(4, 139, 154, 0.1);
-  color: #048B9A;
+  color: #DFC6A4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -636,7 +636,7 @@ const handleAddFlashcard = async (flashcardData) => {
   background: none;
   border: none;
   font-size: 1.75rem;
-  color: #95a5a6;
+  color: #C2BAD3;
   cursor: pointer;
   line-height: 1;
 }
@@ -657,7 +657,7 @@ const handleAddFlashcard = async (flashcardData) => {
   overflow: hidden;
   margin-bottom: 1rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  background-color: #f5f5f5;
+  background-color: #91576C;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -672,13 +672,13 @@ const handleAddFlashcard = async (flashcardData) => {
 .flashcard-modal-title {
   margin: 0 0 0.75rem 0;
   font-size: 1.4rem;
-  color: #2c3e50;
+  color: #C2BAD3;
   word-break: break-word;
 }
 
 .flashcard-modal-description {
   font-size: 0.95rem;
-  color: #555;
+  color: #C2BAD3;
   line-height: 1.5;
   text-align: left;
   width: 100%;

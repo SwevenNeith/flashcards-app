@@ -205,7 +205,7 @@ const handleSubmit = () => {
 }
 
 .modal-card {
-  background-color: white;
+  background-color: #91576C;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
@@ -222,7 +222,7 @@ const handleSubmit = () => {
 
 .form-header {
   padding: 1.25rem 1.5rem;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   display: flex;
   justify-content: space-between;
@@ -255,7 +255,7 @@ const handleSubmit = () => {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -263,7 +263,7 @@ const handleSubmit = () => {
 input[type="text"] {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s;
@@ -271,46 +271,46 @@ input[type="text"] {
 
 input[type="text"]:focus {
   outline: none;
-  border-color: #048B9A;
+  border-color: #DFC6A4;
 }
 
 /* Rich Editor Styles */
 .rich-editor-wrapper {
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 8px;
   overflow: hidden;
-  background-color: white;
+  background-color: #91576C;
 }
 
 .toolbar {
   display: flex;
-  background-color: #f8f9fa;
+  background-color: #91576C;
   padding: 0.5rem;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #DFC6A4;
   gap: 0.5rem;
 }
 
 .tool-btn {
-  background: white;
-  border: 1px solid #ddd;
+  background: #91576C;
+  border: 1px solid #DFC6A4;
   border-radius: 4px;
   padding: 0.25rem 0.6rem;
   cursor: pointer;
   font-size: 0.9rem;
-  color: #2c3e50;
+  color: #C2BAD3;
   transition: all 0.2s;
 }
 
 .tool-btn:hover {
-  border-color: #048B9A;
-  color: #048B9A;
-  background-color: #f0f7f8;
+  border-color: #DFC6A4;
+  color: #DFC6A4;
+  background-color: #91576C;
 }
 
 .tool-btn.active {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
-  border-color: #037380;
+  border-color: #DFC6A4;
 }
 
 .rich-editor {
@@ -324,7 +324,7 @@ input[type="text"]:focus {
 
 .rich-editor[contenteditable]:empty:before {
   content: attr(placeholder);
-  color: #aaa;
+  color: #C2BAD3;
   font-style: italic;
 }
 
@@ -346,7 +346,7 @@ input[type="text"]:focus {
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background-color: #f5f5f5;
+  background-color: #91576C;
 }
 
 .icon-preview {
@@ -383,7 +383,7 @@ input[type="text"]:focus {
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: #666;
+  color: #C2BAD3;
   cursor: pointer;
 }
 
@@ -405,10 +405,10 @@ input[type="text"]:focus {
 .cancel-btn {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  background-color: white;
+  border: 1px solid #DFC6A4;
+  background-color: #91576C;
   border-radius: 8px;
-  color: #666;
+  color: #C2BAD3;
   font-weight: 600;
   cursor: pointer;
 }
@@ -417,7 +417,7 @@ input[type="text"]:focus {
   flex: 2;
   padding: 0.75rem;
   border: none;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -425,11 +425,11 @@ input[type="text"]:focus {
 }
 
 .submit-btn:hover {
-  background-color: #037380;
+  background-color: #DCB160;
 }
 
 .submit-btn:disabled {
-  background: #a4d2d8;
+  background: #e8d8c2;
   cursor: not-allowed;
 }
 </style>

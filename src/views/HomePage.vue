@@ -178,7 +178,7 @@ const closeTestForm = () => {
 }
 
 .start-test-btn {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   padding: 0.8rem 1.5rem;
@@ -190,7 +190,7 @@ const closeTestForm = () => {
 }
 
 .start-test-btn:hover {
-  background-color: #037380;
+  background-color: #DCB160;
 }
 
 .start-test-btn:active {
@@ -199,7 +199,7 @@ const closeTestForm = () => {
 
 .cta-section {
   font-size: 1.1rem;
-  color: #666;
+  color: #C2BAD3;
   line-height: 1.6;
 }
 
@@ -216,19 +216,19 @@ const closeTestForm = () => {
 }
 
 .due-domain-item {
-  background-color: #f8fbff;
-  border-right: 5px solid #048B9A;
+  background-color: #91576C;
+  border-right: 5px solid #DFC6A4;
   padding: 1.25rem;
   border-radius: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
 .domain-test-btn {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -240,7 +240,7 @@ const closeTestForm = () => {
 }
 
 .domain-test-btn:hover {
-  background-color: #037380;
+  background-color: #DCB160;
   transform: translateY(-2px);
 }
 
@@ -250,7 +250,7 @@ const closeTestForm = () => {
 }
 
 .cta-link {
-  color: #048B9A;
+  color: #DFC6A4;
   font-weight: 700;
   text-decoration: underline;
   font-size: 1.25rem;
@@ -267,8 +267,8 @@ const closeTestForm = () => {
 }
 
 .quizz-card {
-  background-color: #f0f7f8;
-  border-left: 5px solid #048B9A;
+  background-color: #91576C;
+  border-left: 5px solid #DFC6A4;
   padding: 1.25rem;
   border-radius: 12px;
   display: flex;
@@ -280,12 +280,12 @@ const closeTestForm = () => {
 
 .quizz-info {
   margin: 0;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-size: 1rem;
 }
 
 .resume-btn {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -297,7 +297,7 @@ const closeTestForm = () => {
 }
 
 .resume-btn:hover {
-  background-color: #037380;
+  background-color: #DFC6A4;
   transform: translateY(-2px);
 }
 

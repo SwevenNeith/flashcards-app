@@ -113,7 +113,7 @@ const pageTitle = computed(() => {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background-color: #f8f9fa;
+  background-color: #91576C;
   overflow-x: hidden;
 }
 
@@ -124,23 +124,23 @@ const pageTitle = computed(() => {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(4,139,154,0.4);
+  box-shadow: 0 4px 15px #DFC6A4;
   z-index: 2147483647 !important; /* Valeur maximale pour passer devant absolument tout */
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-tap-highlight-color: transparent;
 }
 
 .scroll-top-btn:hover {
-  background-color: #037380;
+  background-color: #DCB160;
   transform: translateY(-5px);
-  box-shadow: 0 6px 20px rgba(4,139,154,0.5);
+  box-shadow: 0 6px 20px #DCB160;
 }
 
 .scroll-top-btn:active {

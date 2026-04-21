@@ -200,7 +200,7 @@ const handleStart = () => {
 }
 
 .modal-card {
-  background-color: white;
+  background-color: #91576C;
   width: 100%;
   max-width: 450px;
   max-height: 90vh;
@@ -217,7 +217,7 @@ const handleStart = () => {
 
 .form-header {
   padding: 1.25rem 1.5rem;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   display: flex;
   justify-content: space-between;
@@ -251,7 +251,7 @@ const handleStart = () => {
   display: block;
   margin-bottom: 0.75rem;
   font-weight: 700;
-  color: #2c3e50;
+  color: #C2BAD3;
   font-size: 1rem;
 }
 
@@ -271,18 +271,18 @@ const handleStart = () => {
 .radio-item input[type="radio"] {
   width: 1.2rem;
   height: 1.2rem;
-  accent-color: #048B9A;
+  accent-color: #DFC6A4;
 }
 
 .radio-item span {
   font-size: 1rem;
-  color: #2c3e50;
+  color: #C2BAD3;
 }
 
 label:not(.main-label):not(.radio-item) {
   display: block;
   margin-bottom: 0.5rem;
-  color: #666;
+  color: #C2BAD3;
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -290,18 +290,18 @@ label:not(.main-label):not(.radio-item) {
 .styled-select {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #ddd;
+  border: 1px solid #DFC6A4;
   border-radius: 8px;
   font-size: 1rem;
-  color: #2c3e50;
-  background-color: #f9f9f9;
+  color: #C2BAD3;
+  background-color: #91576C;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .styled-select:focus {
-  border-color: #048B9A;
-  background-color: white;
+  border-color: #DFC6A4;
+  background-color: #91576C;
 }
 
 .styled-select:disabled {
@@ -318,10 +318,10 @@ label:not(.main-label):not(.radio-item) {
 .cancel-btn {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #ddd;
-  background-color: white;
+  border: 1px solid #DFC6A4;
+  background-color: #91576C;
   border-radius: 8px;
-  color: #666;
+  color: #C2BAD3;
   font-weight: 600;
   cursor: pointer;
 }
@@ -330,7 +330,7 @@ label:not(.main-label):not(.radio-item) {
   flex: 2;
   padding: 0.75rem;
   border: none;
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
   border-radius: 8px;
   font-weight: 600;
@@ -339,11 +339,11 @@ label:not(.main-label):not(.radio-item) {
 }
 
 .submit-btn:hover:not(:disabled) {
-  background-color: #037380;
+  background-color: #DCB160;
 }
 
 .submit-btn:disabled {
-  background-color: #ccc;
+  background-color: #C2BAD3;
   cursor: not-allowed;
 }
 
@@ -360,11 +360,11 @@ label:not(.main-label):not(.radio-item) {
 .count-btn {
   flex: 1;
   padding: 0.75rem;
-  background-color: white;
-  border: 1px solid #ddd;
+  background-color: #91576C;
+  border: 1px solid #DFC6A4;
   font-size: 1rem;
   font-weight: 600;
-  color: #2c3e50;
+  color: #C2BAD3;
   cursor: pointer;
   transition: all 0.2s;
   margin-left: -1px; /* Overlap borders */
@@ -382,14 +382,14 @@ label:not(.main-label):not(.radio-item) {
 }
 
 .count-btn:hover:not(.active) {
-  background-color: #f0f7f8;
+  background-color: #91576C;
   z-index: 1;
 }
 
 .count-btn.active {
-  background-color: #048B9A;
+  background-color: #DFC6A4;
   color: white;
-  border-color: #048B9A;
+  border-color: #DFC6A4;
   z-index: 2; /* Position active above others to show full border if needed, though here they overlap */
 }
 
