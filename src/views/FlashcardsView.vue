@@ -364,6 +364,11 @@ const handleAddFlashcard = async (flashcardData) => {
   transition: border-color 0.2s;
 }
 
+.search-input::placeholder {
+  color: #C2BAD3;
+  opacity: 0.8;
+}
+
 .search-input:focus {
   border-color: #DFC6A4;
 }

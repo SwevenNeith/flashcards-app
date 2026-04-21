@@ -162,7 +162,7 @@ const chartOptions = {
       },
       title: {
         display: true,
-        text: 'Date',
+        text: 'Temps',
         color: '#C2BAD3',
         font: {
           weight: 'bold'

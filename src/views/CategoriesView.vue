@@ -270,7 +270,13 @@ const handleAddCategory = async (categoryData) => {
   font-size: 1rem;
   outline: none;
   background-color: #91576C;
+  color: #C2BAD3;
   transition: border-color 0.2s;
+}
+
+.search-input::placeholder {
+  color: #C2BAD3;
+  opacity: 0.8;
 }
 
 .search-input:focus {
