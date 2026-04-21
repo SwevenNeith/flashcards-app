@@ -741,8 +741,8 @@ const failedCards = computed(() => {
 }
 .flashcard-display { width: 100%; background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; min-height: 200px; display: flex; align-items: center; justify-content: center; }
 .active-card { text-align: center; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-.card-icon { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.card-icon img { width: 100%; height: 100%; object-fit: cover; }
+.card-icon { width: 80px; height: 80px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background-color: #f5f5f5; display: flex; align-items: center; justify-content: center; }
+.card-icon img { width: 100%; height: 100%; object-fit: contain; }
 .card-name { font-size: 1.6rem; color: #2c3e50; margin: 0; }
 .card-desc { font-size: 1rem; color: #555; text-align: left; width: 100%; max-width: 500px; border-top: 1px solid #eee; padding-top: 1rem; }
 
@@ -776,8 +776,8 @@ const failedCards = computed(() => {
 .choice-btn.incorrect { border-color: #ff4757 !important; background-color: #fff5f5; color: #ff4757; box-shadow: 0 0 15px rgba(255, 71, 87, 0.2); }
 .choice-btn.disabled { cursor: default; opacity: 0.7; }
 
-.choice-icon { width: 60px; height: 60px; }
-.choice-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+.choice-icon { width: 60px; height: 60px; background-color: #f5f5f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.choice-icon img { width: 100%; height: 100%; object-fit: contain; }
 .choice-text { font-size: 1rem; font-weight: 600; color: #2c3e50; text-align: center; }
 .choice-html { font-size: 0.85rem; color: #555; text-align: left; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
