@@ -810,7 +810,7 @@ const failedCards = computed(() => {
 }
 
 .finish-btn, .return-btn { background-color: #DFC6A4; color: white; border: none; padding: 0.8rem 2rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: all 0.2s; margin-top: 1rem; }
-.finish-btn:hover, .return-btn:hover { background-color: #DFC6A4; transform: translateY(-2px); }
+.finish-btn:hover, .return-btn:hover { background-color: #DCB160; transform: translateY(-2px); }
 
 .reveal { animation: slideDownIn 0.4s ease-out; }
 @keyframes slideDownIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
