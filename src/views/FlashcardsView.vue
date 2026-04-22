@@ -532,7 +532,7 @@ const handleAddFlashcard = async (flashcardData) => {
 .flashcard-name {
   margin: 0;
   font-size: 1.1rem;
-  color: #C2BAD3;
+  color: #DCB160;
 }
 
 .flashcard-desc {

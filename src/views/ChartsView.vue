@@ -134,6 +134,18 @@ const chartData = computed(() => {
   }
 })
 
+const globalSuccessRate = computed(() => {
+  if (filterStats.value.length === 0) return 0
+  const scores = filterStats.value.map(s => {
+    const parts = s.score.split('/')
+    const val = parseFloat(parts[0])
+    const total = parseFloat(parts[1])
+    return total > 0 ? (val / total) * 100 : 0
+  })
+  const sum = scores.reduce((a, b) => a + b, 0)
+  return (sum / scores.length).toFixed(1)
+})
+
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
@@ -319,6 +331,10 @@ onMounted(async () => {
       </div>
 
       <div class="chart-wrapper">
+        <div v-if="filterStats.length > 0" class="success-rate-badge">
+          <span class="label">Taux de réussite</span>
+          <span class="value">{{ globalSuccessRate }}%</span>
+        </div>
         <div v-if="filterStats.length > 1" class="chart-container">
           <Line :data="chartData" :options="chartOptions" />
         </div>
@@ -359,7 +375,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #DFC6A4;
+  color: #DCB160;
   text-decoration: none;
   font-weight: 700;
   transition: transform 0.2s;
@@ -395,7 +411,7 @@ onMounted(async () => {
 
 .filter-group label {
   font-weight: 700;
-  color: #DFC6A4;
+  color: #DCB160;
   font-size: 0.9rem;
 }
 
@@ -448,6 +464,34 @@ onMounted(async () => {
   min-height: 400px;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.success-rate-badge {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.success-rate-badge .label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #C2BAD3;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.success-rate-badge .value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #DCB160;
+  line-height: 1;
 }
 
 .chart-container {

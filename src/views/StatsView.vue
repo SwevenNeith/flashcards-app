@@ -287,7 +287,7 @@ onMounted(async () => {
 .total-tests-badge .count {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #DFC6A4;
+  color: #DCB160;
 }
 
 .filter-group {
@@ -303,7 +303,7 @@ onMounted(async () => {
 
 .filter-group label {
   font-weight: 700;
-  color: #DFC6A4;
+  color: #DCB160;
   font-size: 0.9rem;
 }
 
@@ -357,7 +357,7 @@ onMounted(async () => {
   background-color: #91576C;
   padding: 1.25rem 1rem;
   font-weight: 700;
-  color: #DFC6A4;
+  color: #DCB160;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -483,7 +483,7 @@ onMounted(async () => {
 }
 
 .page-info strong {
-  color: #DFC6A4;
+  color: #DCB160;
 }
 
 /* Responsive adjustments */

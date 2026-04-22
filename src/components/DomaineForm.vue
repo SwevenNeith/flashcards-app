@@ -226,7 +226,17 @@ const handleSubmit = () => {
   font-size: 0.9rem;
 }
 
-input[type="text"],
+input[type="text"] {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #DCB160;
+  background-color: #91576C;
+  color: #DCB160;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
 textarea {
   width: 100%;
   padding: 0.75rem;
@@ -238,7 +248,11 @@ textarea {
   transition: border-color 0.2s;
 }
 
-input[type="text"]::placeholder,
+input[type="text"]::placeholder {
+  color: #DCB160;
+  opacity: 0.8;
+}
+
 textarea::placeholder {
   color: #C2BAD3;
   opacity: 0.8;

@@ -265,14 +265,14 @@ input[type="text"] {
   padding: 0.75rem;
   border: 1px solid #DCB160;
   background-color: #91576C;
-  color: #C2BAD3;
+  color: #DCB160;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s;
 }
 
 input[type="text"]::placeholder {
-  color: #C2BAD3;
+  color: #DCB160;
   opacity: 0.8;
 }
 

@@ -441,7 +441,7 @@ const handleAddCategory = async (categoryData) => {
 .category-name {
   margin: 0;
   font-size: 1.1rem;
-  color: #C2BAD3;
+  color: #DCB160;
 }
 
 .category-desc {
