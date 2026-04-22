@@ -63,14 +63,17 @@ defineEmits(['close', 'confirm'])
 }
 
 .modal-container {
-  width: 90%;
-  max-width: 400px;
+  width: 95%;
+  max-width: 450px;
+  max-height: 90vh;
+  overflow-y: auto;
   margin: 0px auto;
   padding: 20px 30px;
-  background-color: #fff;
+  background-color: #91576C;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
+  border: 1px solid #DFC6A4;
 }
 
 .modal-header h3 {
@@ -82,21 +85,22 @@ defineEmits(['close', 'confirm'])
 .modal-body {
   margin: 20px 0;
   line-height: 1.6;
-  color: #4a5568;
+  color: #C2BAD3;
 }
 
 .warning-text {
   margin-top: 10px;
-  padding: 10px;
-  background-color: #91576C;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.2);
   border-left: 4px solid #f56565;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .final-warning {
   margin-top: 15px;
   font-size: 0.85rem;
-  color: #718096;
+  color: #C2BAD3;
+  opacity: 0.8;
   font-style: italic;
 }
 
@@ -104,24 +108,25 @@ defineEmits(['close', 'confirm'])
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  margin-top: 10px;
 }
 
 .modal-button {
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
 }
 
 .modal-button.cancel {
-  background-color: #edf2f7;
-  color: #4a5568;
+  background-color: #DFC6A4;
+  color: white;
 }
 
 .modal-button.cancel:hover {
-  background-color: #e2e8f0;
+  background-color: #DCB160;
 }
 
 .modal-button.delete {
@@ -145,5 +150,18 @@ defineEmits(['close', 'confirm'])
 .modal-enter-from .modal-container,
 .modal-leave-to .modal-container {
   transform: scale(1.1);
+}
+
+/* Custom scrollbar */
+.modal-container::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+.modal-container::-webkit-scrollbar-thumb {
+  background: #DFC6A4;
+  border-radius: 10px;
 }
 </style>

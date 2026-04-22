@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useDomainesStore } from '../stores/domaines'
 import { supabase } from '../lib/supabase'
 import DomaineForm from '../components/DomaineForm.vue'
-import DeleteConfirmModal from '../components/DeleteConfirmModal.vue'
+import DomainDeleteModal from '../components/DomainDeleteModal.vue'
 
 const router = useRouter()
 const domainesStore = useDomainesStore()
@@ -200,7 +200,7 @@ const handleAddDomaine = async (domainData) => {
       />
     </transition>
 
-    <DeleteConfirmModal
+    <DomainDeleteModal
       :show="showDeleteModal"
       :domain-name="domainToDelete?.name || ''"
       :categories="categoriesWithCounts"

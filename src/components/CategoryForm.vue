@@ -311,11 +311,15 @@ textarea:focus {
   flex: 1;
   padding: 0.75rem;
   border: 1px solid #DFC6A4;
-  background-color: #91576C;
+  background-color: #DFC6A4;
   border-radius: 8px;
-  color: #C2BAD3;
+  color: white;
   font-weight: 600;
   cursor: pointer;
+}
+
+.cancel-btn:hover {
+  background-color: #DCB160;
 }
 
 .submit-btn {
