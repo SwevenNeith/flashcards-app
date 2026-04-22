@@ -230,16 +230,24 @@ input[type="text"],
 textarea {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #DFC6A4;
+  border: 1px solid #DCB160;
+  background-color: #91576C;
+  color: #C2BAD3;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s;
 }
 
+input[type="text"]::placeholder,
+textarea::placeholder {
+  color: #C2BAD3;
+  opacity: 0.8;
+}
+
 input[type="text"]:focus,
 textarea:focus {
   outline: none;
-  border-color: #DFC6A4;
+  border-color: #DCB160;
 }
 
 .icon-upload-container {
@@ -333,7 +341,7 @@ textarea:focus {
   cursor: pointer;
 }
 
-.submit-btn:hover {
+.submit-btn:hover:not(:disabled) {
   background-color: #DCB160;
 }
 

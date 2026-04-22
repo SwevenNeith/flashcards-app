@@ -263,20 +263,27 @@ const handleSubmit = () => {
 input[type="text"] {
   width: 100%;
   padding: 0.75rem;
-  border: 1px solid #DFC6A4;
+  border: 1px solid #DCB160;
+  background-color: #91576C;
+  color: #C2BAD3;
   border-radius: 8px;
   font-size: 1rem;
   transition: border-color 0.2s;
 }
 
+input[type="text"]::placeholder {
+  color: #C2BAD3;
+  opacity: 0.8;
+}
+
 input[type="text"]:focus {
   outline: none;
-  border-color: #DFC6A4;
+  border-color: #DCB160;
 }
 
 /* Rich Editor Styles */
 .rich-editor-wrapper {
-  border: 1px solid #DFC6A4;
+  border: 1px solid #DCB160;
   border-radius: 8px;
   overflow: hidden;
   background-color: #91576C;
@@ -320,6 +327,7 @@ input[type="text"]:focus {
   overflow-y: auto;
   font-size: 1rem;
   outline: none;
+  color: #C2BAD3;
 }
 
 .rich-editor[contenteditable]:empty:before {
