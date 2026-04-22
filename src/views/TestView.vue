@@ -800,7 +800,7 @@ const failedCards = computed(() => {
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(4,139,154,0.2);
+  box-shadow: 0 4px 12px #DFC6A4;
   transition: all 0.2s;
 }
 

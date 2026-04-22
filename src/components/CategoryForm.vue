@@ -332,4 +332,9 @@ textarea:focus {
 .submit-btn:hover {
   background-color: #DCB160;
 }
+
+.submit-btn:disabled {
+  background-color: #C2BAD3;
+  cursor: not-allowed;
+}
 </style>
