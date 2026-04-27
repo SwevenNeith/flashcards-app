@@ -116,37 +116,85 @@ const generateChoices = (field) => {
     if (dName === normName) return false
     
     // 3. LA RÈGLE D'OR : On n'exclut sur la description QUE si c'est pertinent.
-    // Si on cherche le Nom ou la Description, alors oui, 
-    // on ne veut pas 2 cartes qui ont la même description.
     const isTestingNameOrDesc = field === 'name' || field === 'description'
     if (isTestingNameOrDesc && normDesc && dDesc === normDesc) return false
     
     return true
   }
 
-  let distractorsPool = allPoolCards.value.filter(c => 
-    c.category === currentCard.value.category && 
-    isGoodDistractor(c)
-  )
-
-  // Fallback: Si pas assez dans la même catégorie, on pioche dans le même DOMAINE uniquement
-  if (distractorsPool.length < 3) {
-    const additionalDistractors = allPoolCards.value.filter(c => 
-      c.domain === currentCard.value.domain &&
-      c.category !== currentCard.value.category &&
-      isGoodDistractor(c)
+  // --- AUTONOMOUS SEMANTIC MATCHING ---
+  const getSignificantWords = (text) => {
+    const stopWords = new Set(['quel', 'quelle', 'quels', 'quelles', 'est', 'sont', 'dans', 'le', 'la', 'les', 'de', 'du', 'des', 'un', 'une', 'ce', 'cet', 'cette', 'ces', 'et', 'ou', 'pour', 'par', 'sur', 'avec', 'qui', 'que', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'avez', 'vous', 'votre', 'vos', 'notre', 'nos', 'leur', 'leurs', 'aux', 'au', 'il', 'elle', 'on', 'ils', 'elles', 'se', 'sa', 'son', 'ses', 'en', 'y', 'a', 'au'])
+    return new Set(
+      text.toLowerCase()
+        .replace(/[?!.,;]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2 && !stopWords.has(w))
     )
-    distractorsPool = [...distractorsPool, ...additionalDistractors]
   }
+
+  const correctWords = getSignificantWords(currentCard.value.name)
+
+  const getSimilarityScore = (candidate) => {
+    const candidateVal = normalize(candidate[field])
+    if (typeof candidateVal !== 'string' || typeof normCorrect !== 'string') return 0
+    let score = 0
+    
+    // 1. AUTONOMOUS KEYWORD INTERSECTION (Questions similarity)
+    const candidateWords = getSignificantWords(candidate.name)
+    let intersectionCount = 0
+    for (const word of correctWords) {
+      if (candidateWords.has(word)) intersectionCount++
+    }
+    score += intersectionCount * 30
+
+    // 2. STRUCTURAL MATCH (Same starting words in question)
+    const cNameWords = currentCard.value.name.toLowerCase().trim().split(/\s+/)
+    const dNameWords = candidate.name.toLowerCase().trim().split(/\s+/)
+    if (cNameWords[0] === dNameWords[0]) score += 15
+    if (cNameWords[1] && cNameWords[1] === dNameWords[1]) score += 8
+
+    // 3. VALUE MATCH (Word count, digits, etc.)
+    const cValClean = normCorrect.toLowerCase().trim()
+    const dValClean = candidateVal.toLowerCase().trim()
+    const cValWords = cValClean.split(/\s+/)
+    const dValWords = dValClean.split(/\s+/)
+
+    if (cValWords.length === dValWords.length) score += 5
+    if (cValWords.length === 1 && dValWords.length === 1) score += 8
+
+    const hasDigits = (s) => /\d/.test(s)
+    if (hasDigits(cValClean) === hasDigits(dValClean)) score += 12
+    
+    const hasHtml = (s) => /<[a-z][\s\S]*>/i.test(s)
+    if (hasHtml(cValClean) === hasHtml(dValClean)) score += 10
+
+    // 4. PREFER SAME CATEGORY/DOMAIN
+    if (candidate.category === currentCard.value.category) score += 10
+    if (candidate.domain === currentCard.value.domain) score += 5
+
+    return score
+  }
+
+  // Search through ALL available cards in the DB for the best matches
+  const scoredPool = allPoolCards.value
+    .filter(c => isGoodDistractor(c))
+    .map(c => ({
+      card: c,
+      simScore: getSimilarityScore(c)
+    }))
+    .sort((a, b) => b.simScore - a.simScore)
 
   const finalDistractors = []
   const seenValues = new Set([normCorrect])
   
-  for (const c of shuffleArray(distractorsPool)) {
-    const normVal = normalize(c[field])
-    if (!seenValues.has(normVal)) {
+  // Pick the top 3 best distractors from the entire pool
+  for (const item of scoredPool) {
+    const c = item.card
+    const val = normalize(c[field])
+    if (!seenValues.has(val)) {
       finalDistractors.push(c)
-      seenValues.add(normVal)
+      seenValues.add(val)
     }
     if (finalDistractors.length >= 3) break
   }
@@ -508,10 +556,14 @@ const failedCards = computed(() => {
             <h3>Voici les flashcards à réviser :</h3>
             <div class="review-list">
               <div v-for="card in failedCards" :key="card.id || card.name" class="review-item">
-                <span class="card-info">
-                   <strong class="card-title">{{ card.name }}</strong>
+                <div class="card-info">
+                   <div class="card-title-row">
+                     <strong class="card-title">{{ card.name }} :</strong>
+                     <div v-if="card.description" class="card-answer-text" v-html="card.description"></div>
+                     <img v-if="card.icon" :src="card.icon" class="card-answer-img" />
+                   </div>
                    <span class="card-category">{{ card.Categories?.name || 'Inconnue' }}</span>
-                </span>
+                </div>
                 <span class="error-badge">À revoir</span>
               </div>
             </div>
@@ -677,32 +729,61 @@ const failedCards = computed(() => {
 }
 
 .review-item {
-  background: #fff;
-  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1.25rem;
   border-radius: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #DFC6A4;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+  border: 1px solid rgba(223, 198, 164, 0.3);
+  gap: 1rem;
 }
 
 .card-info {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0; /* Allow shrinking for long content */
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .card-title {
   font-weight: 700;
-  color: #C2BAD3;
+  color: #DCB160;
   font-size: 1rem;
 }
 
+.card-answer-text {
+  font-size: 0.95rem;
+  color: #C2BAD3;
+}
+
+/* Remove any paragraph margins from rich text in summary */
+.card-answer-text :deep(p) {
+  margin: 0;
+}
+
+.card-answer-img {
+  max-width: 50px;
+  max-height: 50px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px;
+}
+
 .card-category {
-  font-size: 0.75rem;
-  color: #DFC6A4;
+  font-size: 0.8rem;
+  color: #C2BAD3;
+  opacity: 0.7;
   font-weight: 600;
 }
 
