@@ -14,6 +14,7 @@ const selectedDomainName = computed(() => route.query.domainName || '')
 const selectedCategoryId = computed(() => route.query.categoryId || '')
 const selectedCategoryName = computed(() => route.query.categoryName || '')
 const requestedCount = computed(() => parseInt(route.query.count) || 5)
+const optionsEnabled = computed(() => route.query.options === 'true')
 
 const isLoading = ref(true)
 const allPoolCards = ref([]) 
@@ -30,6 +31,9 @@ const choices = ref([])
 const showFeedback = ref(false)
 const selectedChoiceIndex = ref(null)
 const isProcessing = ref(false)
+const selectedAnswerMode = ref(null) // 'carre' | 'duo' | 'cash' | null
+const cashAnswer = ref('')
+const cashStatus = ref('idle') // 'idle' | 'correct' | 'incorrect'
 
 // Quiz Progress Tracking (Supabase table: Quizz)
 const quizzId = ref(null)
@@ -54,6 +58,9 @@ const prepareCardPhase = () => {
   if (!currentCard.value) return
 
   isCardFinished.value = false // Reset for new card
+  selectedAnswerMode.value = optionsEnabled.value ? null : 'carre'
+  cashAnswer.value = ''
+  cashStatus.value = 'idle'
 
   const availableFieldsSet = new Set(['name'])
   if (currentCard.value.icon) availableFieldsSet.add('icon')
@@ -73,7 +80,13 @@ const setupNextQuestion = async () => {
   
   if (nextFieldIndex < fieldsQueue.value.length) {
     targetField.value = fieldsQueue.value[nextFieldIndex]
-    generateChoices(targetField.value)
+    selectedAnswerMode.value = optionsEnabled.value ? null : 'carre'
+    cashAnswer.value = ''
+    cashStatus.value = 'idle'
+    choices.value = []
+    if (!optionsEnabled.value) {
+      generateChoices(targetField.value, 4)
+    }
   } else {
     // No more fields to ask, this card is done.
     targetField.value = null
@@ -94,7 +107,7 @@ const setupNextQuestion = async () => {
   }
 }
 
-const generateChoices = (field) => {
+const generateChoices = (field, total = 4) => {
   if (!currentCard.value) return
   const correctValue = currentCard.value[field]
   
@@ -198,7 +211,9 @@ const generateChoices = (field) => {
   const finalDistractors = []
   const seenValues = new Set([normCorrect])
   
-  // Pick the top 3 best distractors from the entire pool
+  const distractorTarget = Math.max(0, total - 1)
+
+  // Pick the top distractors from the entire pool
   for (const item of scoredPool) {
     const c = item.card
     const val = normalize(c[field])
@@ -206,7 +221,7 @@ const generateChoices = (field) => {
       finalDistractors.push(c)
       seenValues.add(val)
     }
-    if (finalDistractors.length >= 3) break
+    if (finalDistractors.length >= distractorTarget) break
   }
 
   const finalChoices = finalDistractors.map(c => ({
@@ -216,6 +231,116 @@ const generateChoices = (field) => {
 
   finalChoices.push({ value: correctValue, isCorrect: true })
   choices.value = shuffleArray(finalChoices)
+}
+
+const getPlainText = (val) => {
+  if (typeof val !== 'string') return ''
+  return val.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+const cashMaxLength = 50
+const cashCorrectText = computed(() => {
+  if (!currentCard.value || !targetField.value) return ''
+  const field = targetField.value
+  const raw = currentCard.value[field]
+  if (raw === null || raw === undefined) return ''
+  const str = String(raw)
+  return field === 'description' ? getPlainText(str) : str.trim()
+})
+
+const isCashDisabled = computed(() => {
+  if (targetField.value === 'icon') return true
+  return cashCorrectText.value.length > cashMaxLength
+})
+
+const cashExpectedKindLabel = computed(() => {
+  const field = targetField.value
+  if (field === 'name') return 'Nom attendu'
+  if (field === 'description') return 'Description attendue'
+  if (field === 'icon') return 'Icône attendue'
+  return 'Réponse attendue'
+})
+
+const cashDisabledTitle = computed(() => {
+  if (!isCashDisabled.value) return 'Réponse libre'
+  if (targetField.value === 'icon') return 'Option indisponible pour une question image'
+  return `Option indisponible : réponse trop longue (>${cashMaxLength} caractères)`
+})
+
+const selectAnswerMode = (mode) => {
+  if (!targetField.value || isCardFinished.value) return
+  if (isProcessing.value) return
+  if (mode === 'cash' && isCashDisabled.value) return
+
+  selectedAnswerMode.value = mode
+  cashAnswer.value = ''
+  cashStatus.value = 'idle'
+
+  if (mode === 'carre') generateChoices(targetField.value, 4)
+  if (mode === 'duo') generateChoices(targetField.value, 2)
+  if (mode === 'cash') choices.value = []
+}
+
+const handleCashSubmit = () => {
+  if (isProcessing.value) return
+  if (!currentCard.value || !targetField.value) return
+  if (selectedAnswerMode.value !== 'cash') return
+  if (isCashDisabled.value) return
+
+  const field = targetField.value
+  const correctRaw = currentCard.value[field]
+
+  const normalize = (val) => {
+    if (typeof val !== 'string') return ''
+    return val
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/<[^>]*>/g, ' ')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
+
+  const userNorm = normalize(cashAnswer.value)
+  const correctNorm = normalize(typeof correctRaw === 'string' ? correctRaw : String(correctRaw ?? ''))
+
+  isProcessing.value = true
+
+  if (userNorm && userNorm === correctNorm) {
+    cashStatus.value = 'correct'
+    totalScore.value += pointsPerQuestion.value
+  } else {
+    cashStatus.value = 'incorrect'
+    const correctToShow = field === 'description' ? getPlainText(String(correctRaw || '')) : String(correctRaw || '')
+    cashAnswer.value = correctToShow
+
+    const currentId = currentCard.value.id || currentCard.value.name
+    if (!erroredCardIds.value.includes(currentId)) {
+      erroredCardIds.value.push(currentId)
+    }
+  }
+
+  showFeedback.value = true
+  selectedChoiceIndex.value = null
+
+  setTimeout(async () => {
+    showFeedback.value = false
+    isProcessing.value = false
+    revealedFields.value.push(targetField.value)
+
+    if (quizzId.value) {
+      await supabase
+        .from('Quizz')
+        .update({ 
+          score: Number(totalScore.value.toFixed(1)),
+          to_review: erroredCardIds.value
+        })
+        .eq('id', quizzId.value)
+    }
+
+    setupNextQuestion()
+  }, 1000)
 }
 
 const handleChoice = (choice, index) => {
@@ -614,9 +739,51 @@ const failedCards = computed(() => {
           </div>
 
           <!-- Panneau de Choix -->
-          <div v-if="targetField && !isCardFinished" class="choices-panel">
-            <p class="choice-instruction">Choisissez la bonne proposition :</p>
-            <div class="choices-grid">
+          <div v-if="targetField && !isCardFinished" class="choices-panel">            
+            <!-- Si Options activées : on choisit d'abord le mode -->
+            <div v-if="optionsEnabled && !selectedAnswerMode" class="mode-rows">
+              <div class="mode-row mode-row-top">
+                <button type="button" class="mode-btn" @click="selectAnswerMode('duo')">Duo</button>
+                <button type="button" class="mode-btn" @click="selectAnswerMode('carre')">Carré</button>
+              </div>
+              <div class="mode-row mode-row-bottom">
+                <button 
+                  type="button" 
+                  class="mode-btn" 
+                  :class="{ disabled: isCashDisabled }"
+                  :disabled="isCashDisabled"
+                  @click="selectAnswerMode('cash')"
+                  :title="cashDisabledTitle"
+                >
+                  Cash
+                </button>
+              </div>
+            </div>
+
+            <!-- Mode Cash -->
+            <div v-else-if="selectedAnswerMode === 'cash'" class="cash-panel">
+              <p class="cash-expected-label">{{ cashExpectedKindLabel }}</p>
+              <input
+                v-model="cashAnswer"
+                class="cash-input"
+                :class="{ correct: cashStatus === 'correct', incorrect: cashStatus === 'incorrect' }"
+                type="text"
+                placeholder="Écris ta réponse..."
+                :disabled="isProcessing"
+                @keydown.enter.prevent="handleCashSubmit"
+              />
+              <button
+                type="button"
+                class="cash-submit"
+                :disabled="isProcessing || !cashAnswer.trim()"
+                @click="handleCashSubmit"
+              >
+                Valider
+              </button>
+            </div>
+
+            <!-- Mode QCM (Carré / Duo) ou test classique -->
+            <div v-else class="choices-grid">
               <button 
                 v-for="(choice, idx) in choices" :key="idx" class="choice-btn"
                 :class="{ 'correct': showFeedback && choice.isCorrect, 'incorrect': showFeedback && selectedChoiceIndex === idx && !choice.isCorrect, 'disabled': isProcessing && selectedChoiceIndex !== idx }"
@@ -841,6 +1008,125 @@ const failedCards = computed(() => {
 .choice-instruction { font-weight: 600; color: #C2BAD3; text-align: center; }
 .choices-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
+.mode-rows {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mode-row {
+  width: 100%;
+  display: flex;
+  gap: 1rem;
+}
+
+/* Ligne 1 : occupe toute la largeur (espacement), boutons taille fixe */
+.mode-row-top {
+  width: 80%;
+  max-width: 560px;
+  margin: 0 auto;
+  justify-content: space-between;
+}
+
+/* Ligne 2 : contenu centré */
+.mode-row-bottom {
+  justify-content: center;
+}
+
+.mode-btn {
+  --mode-size: clamp(110px, 20vw, 170px);
+  width: var(--mode-size);
+  height: var(--mode-size);
+  border-radius: 50%;
+  border: none;
+  background-color: #462A39;
+  color: #C2BAD3;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  font-size: clamp(1rem, 3.4vw, 1.35rem);
+}
+
+@media (hover: hover) {
+  .mode-btn:hover:not(.disabled) {
+    background-color: #DCB160;
+  }
+}
+
+.mode-btn:active:not(.disabled) {
+  transform: scale(0.98);
+}
+
+.mode-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.cash-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.cash-expected-label {
+  margin: 0;
+  text-align: center;
+  font-weight: 800;
+  color: #C2BAD3;
+  font-size: 0.95rem;
+}
+
+.cash-input {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 2px solid #DFC6A4;
+  background: #91576C;
+  color: #C2BAD3;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.cash-input::placeholder {
+  color: #C2BAD3;
+  opacity: 0.8;
+}
+
+.cash-input.correct {
+  border-color: #2ed573;
+  box-shadow: 0 0 0 3px rgba(46, 213, 115, 0.15);
+}
+
+.cash-input.incorrect {
+  border-color: #ff4757;
+  box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.15);
+}
+
+.cash-submit {
+  background-color: #DFC6A4;
+  color: white;
+  border: none;
+  padding: 0.85rem 1.25rem;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cash-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .choice-btn {
   background: #91576C;
   border: 2px solid #DFC6A4;
@@ -912,5 +1198,9 @@ const failedCards = computed(() => {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 
-@media (max-width: 480px) { .choices-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .choices-grid { grid-template-columns: 1fr; }
+  .mode-row { gap: 0.75rem; }
+  /* la taille est déjà responsive via clamp() */
+}
 </style>

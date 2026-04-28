@@ -20,6 +20,7 @@ const selectedDomain = ref('')
 const selectedCategory = ref('')
 const questionCount = ref(10)
 const countOptions = [10, 20, 30]
+const optionsEnabled = ref(false)
 
 const sortedDomaines = computed(() => {
   return [...domainesStore.domaines].sort((a, b) => a.name.localeCompare(b.name))
@@ -72,7 +73,8 @@ const handleStart = () => {
     domainName: domainObj?.name,
     categoryId: categoryObj?.id,
     categoryName: categoryObj?.name,
-    count: questionCount.value
+    count: questionCount.value,
+    options: optionsEnabled.value
   })
 }
 </script>
@@ -167,6 +169,19 @@ const handleStart = () => {
           </div>
         </div>
 
+        <!-- Options (modes Duo / Carré / Cash dans le test) -->
+        <div class="form-group">
+          <div class="options-row">
+            <span class="main-label options-label">Options</span>
+            <label class="toggle">
+              <input type="checkbox" v-model="optionsEnabled" />
+              <span class="toggle-track" aria-hidden="true">
+                <span class="toggle-thumb"></span>
+              </span>
+            </label>
+          </div>
+        </div>
+
         <div class="form-actions">
           <button type="button" class="cancel-btn" @click="$emit('close')">Annuler</button>
           <button 
@@ -207,6 +222,7 @@ const handleStart = () => {
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
   overflow-y: auto;
+  overflow-x: hidden;
   animation: slideUp 0.3s ease-out;
 }
 
@@ -400,5 +416,70 @@ label:not(.main-label):not(.radio-item) {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.options-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.options-label {
+  margin-bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  height: 15px;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.toggle-track {
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background-color: #462A39;
+  border: 1px solid rgba(223, 198, 164, 0.6);
+  position: relative;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.toggle-thumb {
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #C2BAD3;
+  transition: left 0.2s;
+}
+
+.toggle input:checked + .toggle-track {
+  background-color: #DCB160;
+  border-color: rgba(223, 198, 164, 0.9);
+}
+
+.toggle input:checked + .toggle-track .toggle-thumb {
+  left: 21px;
+  background: #C2BAD3;
 }
 </style>

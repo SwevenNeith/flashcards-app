@@ -72,7 +72,8 @@ const handleStartTest = (data) => {
       domainName: data.domainName,
       categoryId: data.categoryId,
       categoryName: data.categoryName,
-      count: data.count
+      count: data.count,
+      options: data.options ? 'true' : 'false'
     }
   })
 }
