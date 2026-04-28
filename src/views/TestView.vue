@@ -98,7 +98,18 @@ const generateChoices = (field) => {
   if (!currentCard.value) return
   const correctValue = currentCard.value[field]
   
-  const normalize = (val) => (typeof val === 'string' ? val.trim() : val)
+  const normalize = (val) => {
+    if (typeof val !== 'string') return val
+
+    return val
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/<[^>]*>/g, ' ')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
   const normCorrect = normalize(correctValue)
   const normName = normalize(currentCard.value.name)
   const normDesc = normalize(currentCard.value.description)
@@ -126,8 +137,7 @@ const generateChoices = (field) => {
   const getSignificantWords = (text) => {
     const stopWords = new Set(['quel', 'quelle', 'quels', 'quelles', 'est', 'sont', 'dans', 'le', 'la', 'les', 'de', 'du', 'des', 'un', 'une', 'ce', 'cet', 'cette', 'ces', 'et', 'ou', 'pour', 'par', 'sur', 'avec', 'qui', 'que', 'quoi', 'où', 'quand', 'comment', 'pourquoi', 'avez', 'vous', 'votre', 'vos', 'notre', 'nos', 'leur', 'leurs', 'aux', 'au', 'il', 'elle', 'on', 'ils', 'elles', 'se', 'sa', 'son', 'ses', 'en', 'y', 'a', 'au'])
     return new Set(
-      text.toLowerCase()
-        .replace(/[?!.,;]/g, ' ')
+      normalize(text)
         .split(/\s+/)
         .filter(w => w.length > 2 && !stopWords.has(w))
     )
@@ -149,14 +159,14 @@ const generateChoices = (field) => {
     score += intersectionCount * 30
 
     // 2. STRUCTURAL MATCH (Same starting words in question)
-    const cNameWords = currentCard.value.name.toLowerCase().trim().split(/\s+/)
-    const dNameWords = candidate.name.toLowerCase().trim().split(/\s+/)
+    const cNameWords = normalize(currentCard.value.name).split(/\s+/)
+    const dNameWords = normalize(candidate.name).split(/\s+/)
     if (cNameWords[0] === dNameWords[0]) score += 15
     if (cNameWords[1] && cNameWords[1] === dNameWords[1]) score += 8
 
     // 3. VALUE MATCH (Word count, digits, etc.)
-    const cValClean = normCorrect.toLowerCase().trim()
-    const dValClean = candidateVal.toLowerCase().trim()
+    const cValClean = normCorrect.trim()
+    const dValClean = candidateVal.trim()
     const cValWords = cValClean.split(/\s+/)
     const dValWords = dValClean.split(/\s+/)
 
