@@ -14,7 +14,9 @@ const selectedDomainName = computed(() => route.query.domainName || '')
 const selectedCategoryId = computed(() => route.query.categoryId || '')
 const selectedCategoryName = computed(() => route.query.categoryName || '')
 const requestedCount = computed(() => parseInt(route.query.count) || 5)
-const optionsEnabled = computed(() => route.query.options === 'true')
+const optionsFromQuery = computed(() => route.query.options === 'true')
+/** Mode « Options » (Duo / Carré / Cash) : query ou quizz.options au reprendre */
+const optionsModeActive = ref(false)
 
 const isLoading = ref(true)
 const allPoolCards = ref([]) 
@@ -43,6 +45,101 @@ const totalScore = ref(0)
 const erroredCardIds = ref([])
 const pointsPerQuestion = ref(0)
 
+/** Chaîne answer pour Quizz : segments par carte séparés par ",", modes sur une carte par "-" (D, CR, CS) */
+const completedCardAnswerSegments = ref([])
+const currentCardModes = ref([])
+
+/** En mode Options : 5 points par flashcard (répartis entre les sous-questions), pas 5 par question */
+const maxOptionsTestScore = computed(() => quizCards.value.length * 5)
+
+const maxClassicTestScore = computed(() => quizCards.value.length)
+
+const maxDisplayedTestScore = computed(() =>
+  optionsModeActive.value ? maxOptionsTestScore.value : maxClassicTestScore.value
+)
+
+const buildAnswerString = () => {
+  const segs = [...completedCardAnswerSegments.value]
+  if (currentCardModes.value.length) segs.push(currentCardModes.value.join('-'))
+  return segs.join(',')
+}
+
+const restoreAnswerState = (answer, currentCardIdx) => {
+  completedCardAnswerSegments.value = []
+  currentCardModes.value = []
+  const parts = String(answer || '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean)
+  const i = currentCardIdx
+  if (!parts.length) return
+  if (parts.length >= i + 1) {
+    completedCardAnswerSegments.value = parts.slice(0, i)
+    currentCardModes.value = (parts[i] || '')
+      .split('-')
+      .map((x) => x.trim())
+      .filter(Boolean)
+  } else {
+    completedCardAnswerSegments.value = parts.slice(0, parts.length)
+  }
+}
+
+const persistQuizzProgress = async (extra = {}) => {
+  if (!quizzId.value) return
+  await supabase
+    .from('Quizz')
+    .update({
+      score: Number(totalScore.value.toFixed(2)),
+      to_review: erroredCardIds.value,
+      answer: buildAnswerString(),
+      ...extra
+    })
+    .eq('id', quizzId.value)
+}
+
+const recordSelectedModeCode = (isCorrect) => {
+  if (!optionsModeActive.value) return
+  const m = selectedAnswerMode.value
+  const code = m === 'duo' ? 'D' : m === 'carre' ? 'CR' : m === 'cash' ? 'CS' : ''
+  if (code) currentCardModes.value.push(`${code}${isCorrect ? '+' : '-'}`)
+}
+
+/** Parse un segment de carte ex. "D+-CR-+CS+" ou ancien "D-CR" */
+const parseCardAnswerSegment = (segment) => {
+  const s = String(segment || '').trim()
+  if (!s) return []
+  const re = /(CR|CS|D)(\+|-)?/g
+  const out = []
+  let m
+  while ((m = re.exec(s)) !== null) {
+    const code = m[1]
+    const suf = m[2]
+    out.push({
+      code,
+      correct: suf === '+' ? true : suf === '-' ? false : null
+    })
+  }
+  return out
+}
+
+/**
+ * Points mode Options : la carte vaut 5 pts au total, divisés entre les n sous-questions.
+ * Par sous-question (max = 5/n) : Duo = 2/5 du max, Carré = 3/5 du max, Cash = max ;
+ * si Cash est désactivé sur cette question : Carré = max, Duo = 2/5 du max.
+ */
+const getOptionsPointsForAnswer = (isCorrect) => {
+  if (!isCorrect) return 0
+  const n = Math.max(1, fieldsQueue.value.length - 1)
+  const perSlotMax = 5 / n
+  const mode = selectedAnswerMode.value
+  const cashOff = isCashDisabled.value
+  let pts = 0
+  if (mode === 'duo') pts = perSlotMax * (2 / 5)
+  else if (mode === 'carre') pts = cashOff ? perSlotMax : perSlotMax * (3 / 5)
+  else if (mode === 'cash') pts = cashOff ? 0 : perSlotMax
+  return Math.round(pts * 100) / 100
+}
+
 const currentCard = computed(() => quizCards.value[currentIndex.value] || null)
 
 const shuffleArray = (array) => {
@@ -58,7 +155,8 @@ const prepareCardPhase = () => {
   if (!currentCard.value) return
 
   isCardFinished.value = false // Reset for new card
-  selectedAnswerMode.value = optionsEnabled.value ? null : 'carre'
+  currentCardModes.value = []
+  selectedAnswerMode.value = optionsModeActive.value ? null : 'carre'
   cashAnswer.value = ''
   cashStatus.value = 'idle'
 
@@ -80,15 +178,19 @@ const setupNextQuestion = async () => {
   
   if (nextFieldIndex < fieldsQueue.value.length) {
     targetField.value = fieldsQueue.value[nextFieldIndex]
-    selectedAnswerMode.value = optionsEnabled.value ? null : 'carre'
+    selectedAnswerMode.value = optionsModeActive.value ? null : 'carre'
     cashAnswer.value = ''
     cashStatus.value = 'idle'
     choices.value = []
-    if (!optionsEnabled.value) {
+    if (!optionsModeActive.value) {
       generateChoices(targetField.value, 4)
     }
   } else {
     // No more fields to ask, this card is done.
+    if (optionsModeActive.value && currentCardModes.value.length) {
+      completedCardAnswerSegments.value.push(currentCardModes.value.join('-'))
+      currentCardModes.value = []
+    }
     targetField.value = null
     choices.value = []
     
@@ -99,10 +201,7 @@ const setupNextQuestion = async () => {
     // Update position in Quizz tracking table (already finished this card, so move to the next label)
     if (quizzId.value) {
       const nextPos = Math.min(currentIndex.value + 2, quizCards.value.length)
-      await supabase
-        .from('Quizz')
-        .update({ position: `${nextPos}/${quizCards.value.length}` })
-        .eq('id', quizzId.value)
+      await persistQuizzProgress({ position: `${nextPos}/${quizCards.value.length}` })
     }
   }
 }
@@ -307,9 +406,14 @@ const handleCashSubmit = () => {
 
   isProcessing.value = true
 
-  if (userNorm && userNorm === correctNorm) {
+  const cashOk = !!(userNorm && userNorm === correctNorm)
+  recordSelectedModeCode(cashOk)
+
+  if (cashOk) {
     cashStatus.value = 'correct'
-    totalScore.value += pointsPerQuestion.value
+    totalScore.value += optionsModeActive.value
+      ? getOptionsPointsForAnswer(true)
+      : pointsPerQuestion.value
   } else {
     cashStatus.value = 'incorrect'
     const correctToShow = field === 'description' ? getPlainText(String(correctRaw || '')) : String(correctRaw || '')
@@ -329,15 +433,7 @@ const handleCashSubmit = () => {
     isProcessing.value = false
     revealedFields.value.push(targetField.value)
 
-    if (quizzId.value) {
-      await supabase
-        .from('Quizz')
-        .update({ 
-          score: Number(totalScore.value.toFixed(1)),
-          to_review: erroredCardIds.value
-        })
-        .eq('id', quizzId.value)
-    }
+    await persistQuizzProgress()
 
     setupNextQuestion()
   }, 1000)
@@ -356,8 +452,12 @@ const handleChoice = (choice, index) => {
 
   const currentId = currentCard.value.id || currentCard.value.name
 
+  recordSelectedModeCode(!!choice.isCorrect)
+
   if (choice.isCorrect) {
-    totalScore.value += pointsPerQuestion.value
+    totalScore.value += optionsModeActive.value
+      ? getOptionsPointsForAnswer(true)
+      : pointsPerQuestion.value
   } else {
     if (!erroredCardIds.value.includes(currentId)) {
       erroredCardIds.value.push(currentId)
@@ -370,16 +470,7 @@ const handleChoice = (choice, index) => {
     isProcessing.value = false
     revealedFields.value.push(targetField.value)
     
-    // Update score and to_review in Quizz tracking table
-    if (quizzId.value) {
-      await supabase
-        .from('Quizz')
-        .update({ 
-          score: Number(totalScore.value.toFixed(1)),
-          to_review: erroredCardIds.value
-        })
-        .eq('id', quizzId.value)
-    }
+    await persistQuizzProgress()
 
     setupNextQuestion()
   }, 1000)
@@ -397,6 +488,8 @@ const goToNextCard = () => {
 onMounted(async () => {
   const quizzIdInQuery = route.query.quizzId
   
+  let resumeAnswerRestore = null
+
   try {
     let poolQuery = supabase.from('Flashcards').select('*, Categories(name)')
     
@@ -486,7 +579,14 @@ onMounted(async () => {
       // but some components might use it. We'll rely on our data.)
       
       quizCards.value = selectionCards
+
+      const useOpts = qData.options === true || qData.options === 'true'
+      optionsModeActive.value = useOpts || optionsFromQuery.value
+      resumeAnswerRestore = { answer: qData.answer ?? '', cardIdx: currentIndex.value }
     } else {
+      optionsModeActive.value = optionsFromQuery.value
+      completedCardAnswerSegments.value = []
+      currentCardModes.value = []
       // Start new quiz
       if (selectionType.value === 'Catégorie') {
         const { data, error } = await supabase.from('Flashcards').select('*, Categories(name), Revision(maitrise, due_date)').eq('category', selectedCategoryId.value)
@@ -558,7 +658,9 @@ onMounted(async () => {
               flashcards: flashcardIds,
               position: `1/${quizCards.value.length}`,
               score: 0,
-              to_review: [] 
+              to_review: [],
+              answer: '',
+              options: optionsFromQuery.value
             }
           ])
           .select()
@@ -572,6 +674,9 @@ onMounted(async () => {
 
     if (quizCards.value.length > 0) {
       prepareCardPhase()
+      if (resumeAnswerRestore) {
+        restoreAnswerState(resumeAnswerRestore.answer, resumeAnswerRestore.cardIdx)
+      }
     }
   } catch (error) {
     console.error('Erreur:', error)
@@ -582,7 +687,8 @@ onMounted(async () => {
 
 const saveAndExit = async () => {
   try {
-    const scoreStr = `${Number(totalScore.value.toFixed(1))}/${quizCards.value.length}`
+    const maxPts = optionsModeActive.value ? maxOptionsTestScore.value : quizCards.value.length
+    const scoreStr = `${Number(totalScore.value.toFixed(1))}/${maxPts}`
     const toReviewStr = failedCards.value.map(c => c.name).join(', ')
 
     const { error } = await supabase
@@ -658,6 +764,13 @@ const failedCards = computed(() => {
     return erroredCardIds.value.includes(id)
   })
 })
+
+const optionsRecapCards = computed(() => {
+  if (!optionsModeActive.value || !isTestFinished.value) return []
+  const str = buildAnswerString().trim()
+  if (!str) return []
+  return str.split(',').map((seg) => parseCardAnswerSegment(seg))
+})
 </script>
 
 <template>
@@ -683,9 +796,25 @@ const failedCards = computed(() => {
         <div class="score-card">
           <div class="score-circle">
             <span class="score-value">{{ Number(totalScore.toFixed(1)) }}</span>
-            <span class="score-total">/ {{ quizCards.length }}</span>
+            <span class="score-total">/ {{ maxDisplayedTestScore }}</span>
           </div>
           <h2>Bravo ! Test terminé</h2>
+          <div v-if="optionsRecapCards.length" class="options-answer-recap" aria-label="Récapitulatif des modes choisis">
+            <template v-for="(card, ci) in optionsRecapCards" :key="ci">
+              <template v-for="(tok, ti) in card" :key="`${ci}-${ti}-${tok.code}`">
+                <span
+                  class="recap-mode"
+                  :class="{
+                    'recap-ok': tok.correct === true,
+                    'recap-bad': tok.correct === false,
+                    'recap-neutral': tok.correct === null
+                  }"
+                >{{ tok.code }}</span><span v-if="ti < card.length - 1" class="recap-sep">-</span>
+              </template>
+              <span v-if="ci < optionsRecapCards.length - 1" class="recap-sep">,</span>
+            </template>
+          </div>
+          <p v-if="optionsRecapCards.length" class="options-answer-legend">D = Duo · CR = Carré · CS = Cash · vert = bon · rouge = faux</p>
           
           <div v-if="failedCards.length > 0" class="review-section">
             <h3>Voici les flashcards à réviser :</h3>
@@ -741,7 +870,7 @@ const failedCards = computed(() => {
           <!-- Panneau de Choix -->
           <div v-if="targetField && !isCardFinished" class="choices-panel">            
             <!-- Si Options activées : on choisit d'abord le mode -->
-            <div v-if="optionsEnabled && !selectedAnswerMode" class="mode-rows">
+            <div v-if="optionsModeActive && !selectedAnswerMode" class="mode-rows">
               <div class="mode-row mode-row-top">
                 <button type="button" class="mode-btn" @click="selectAnswerMode('duo')">Duo</button>
                 <button type="button" class="mode-btn" @click="selectAnswerMode('carre')">Carré</button>
@@ -883,6 +1012,47 @@ const failedCards = computed(() => {
   font-size: 1rem;
   color: #C2BAD3;
   font-weight: 600;
+}
+
+.options-answer-recap {
+  margin: 0.75rem auto 0.25rem;
+  max-width: 100%;
+  padding: 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+.recap-mode {
+  font-weight: 800;
+}
+
+.recap-ok {
+  color: #2ed573;
+}
+
+.recap-bad {
+  color: #ff4757;
+}
+
+.recap-neutral {
+  color: #DFC6A4;
+}
+
+.recap-sep {
+  color: #C2BAD3;
+  opacity: 0.75;
+  font-weight: 600;
+  margin: 0 0.15em;
+}
+
+.options-answer-legend {
+  margin: 0 0 1.25rem;
+  font-size: 0.8rem;
+  color: #C2BAD3;
+  opacity: 0.85;
 }
 
 .review-section {

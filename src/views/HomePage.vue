@@ -86,7 +86,8 @@ const resumeQuizz = (quizz) => {
       domainId: quizz.domain,
       domainName: quizz.Domaines?.name,
       categoryId: quizz.category,
-      categoryName: quizz.Categories?.name
+      categoryName: quizz.Categories?.name,
+      options: quizz.use_options ? 'true' : 'false'
     }
   })
 }
