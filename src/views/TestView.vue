@@ -153,6 +153,70 @@ const shuffleArray = (array) => {
   return newArr
 }
 
+/** Mots ignorés après quel/quelle pour atteindre le « type » de réponse (nom commun attendu) */
+const SKIP_AFTER_QUEL = new Set([
+  'est', 'sont', 'etait', 'etaient', 'fut', 'furent', 'sera', 'seront', 'soit',
+  'a', 'ont', 'avait', 'avaient', 'ete', 'fait', 'faite', 'etre',
+  'la', 'le', 'les', 'un', 'une', 'des', 'du', 'de', 'au', 'aux', 'l', 'd',
+  'ce', 'cet', 'cette', 'ces', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son',
+  'sa', 'ses', 'leur', 'leurs', 'qui', 'que', 'quoi', 'dont', 'ou',
+  'plus', 'moins', 'tres', 'trop', 'si', 'ne', 'pas', 'n',
+])
+
+/**
+ * Groupes de synonymes (culture générale) : même « famille » quelle ville / capitale, roi / souverain, etc.
+ */
+const QUEL_TYPE_GROUPS = [
+  new Set(['ville', 'capitale', 'cite', 'commune', 'metropole', 'agglomeration']),
+  new Set(['pays', 'nation', 'royaume', 'empire', 'republique', 'continent', 'region']),
+  new Set([
+    'roi', 'reine', 'empereur', 'imperatrice', 'souverain', 'monarque', 'pharaon', 'tsar', 'pape', 'duc', 'comte',
+  ]),
+  new Set(['guerre', 'bataille', 'conflit', 'campagne', 'siege', 'offensive']),
+  new Set(['date', 'annee', 'jour', 'mois', 'siecle', 'moment']),
+  new Set(['trait', 'traite', 'accord', 'paix', 'protocole']),
+  new Set(['film', 'comedie', 'drame', 'realisateur']),
+  new Set(['livre', 'roman', 'oeuvre', 'piece']),
+  new Set(['auteur', 'ecrivain', 'philosophe', 'compositeur', 'scientifique']),
+  new Set(['invention', 'inventeur', 'decouverte']),
+]
+
+const quelHeadGroup = (head) => {
+  if (!head) return null
+  for (const g of QUEL_TYPE_GROUPS) {
+    if (g.has(head)) return g
+  }
+  return null
+}
+
+const quelHeadsCompatible = (a, b) => {
+  if (!a || !b) return null
+  if (a === b) return true
+  const ga = quelHeadGroup(a)
+  const gb = quelHeadGroup(b)
+  if (ga && ga === gb) return true
+  return false
+}
+
+/**
+ * Texte déjà normalisé (minuscules, sans accents) comme dans generateChoices → normalize()
+ */
+const extractQuelHead = (normalizedQuestion) => {
+  if (!normalizedQuestion || typeof normalizedQuestion !== 'string') return null
+  const re = /\b(quelle|quel|quels|quelles)\b/g
+  let lastMatch = null
+  let m
+  while ((m = re.exec(normalizedQuestion)) !== null) lastMatch = m
+  if (!lastMatch) return null
+  let after = normalizedQuestion.slice(lastMatch.index + lastMatch[0].length).trim()
+  after = after.replace(/^[,;:]+/, '').trim()
+  const words = after.split(/\s+/).filter(Boolean)
+  let i = 0
+  while (i < words.length && SKIP_AFTER_QUEL.has(words[i])) i++
+  if (i >= words.length) return null
+  return words[i]
+}
+
 const prepareCardPhase = () => {
   if (!currentCard.value) return
 
@@ -227,6 +291,9 @@ const generateChoices = (field, total = 4) => {
   const normCorrect = normalize(correctValue)
   const normName = normalize(currentCard.value.name)
   const normDesc = normalize(currentCard.value.description)
+  const currentQuelHead = extractQuelHead(
+    typeof normName === 'string' ? normName : ''
+  )
   
   const isGoodDistractor = (c) => {
     if (!c[field]) return false
@@ -263,35 +330,52 @@ const generateChoices = (field, total = 4) => {
     const candidateVal = normalize(candidate[field])
     if (typeof candidateVal !== 'string' || typeof normCorrect !== 'string') return 0
     let score = 0
-    
+
+    const candNormName = normalize(candidate.name)
+    const candQuelHead =
+      typeof candNormName === 'string' ? extractQuelHead(candNormName) : null
+
+    let quelCompat = null
+    if (currentQuelHead && candQuelHead) {
+      quelCompat = quelHeadsCompatible(currentQuelHead, candQuelHead)
+      if (quelCompat === true) score += 130
+      else if (quelCompat === false) score -= 220
+    } else if (currentQuelHead && !candQuelHead) {
+      score -= 45
+    }
+
     // 1. AUTONOMOUS KEYWORD INTERSECTION (Questions similarity)
     const candidateWords = getSignificantWords(candidate.name)
     let intersectionCount = 0
     for (const word of correctWords) {
       if (candidateWords.has(word)) intersectionCount++
     }
-    score += intersectionCount * 30
+    const intersectMul = quelCompat === false ? 0.12 : 1
+    score += intersectionCount * 30 * intersectMul
 
-    // 2. STRUCTURAL MATCH (Same starting words in question)
+    // 2. STRUCTURAL MATCH (Same starting words in question) — pas si « quel X » vs « quel Y » incompatible
     const cNameWords = normalize(currentCard.value.name).split(/\s+/)
     const dNameWords = normalize(candidate.name).split(/\s+/)
-    if (cNameWords[0] === dNameWords[0]) score += 15
-    if (cNameWords[1] && cNameWords[1] === dNameWords[1]) score += 8
+    if (quelCompat !== false) {
+      if (cNameWords[0] === dNameWords[0]) score += 15
+      if (cNameWords[1] && cNameWords[1] === dNameWords[1]) score += 8
+    }
 
     // 3. VALUE MATCH (Word count, digits, etc.)
     const cValClean = normCorrect.trim()
     const dValClean = candidateVal.trim()
     const cValWords = cValClean.split(/\s+/)
     const dValWords = dValClean.split(/\s+/)
+    const valMul = quelCompat === false ? 0.2 : 1
 
-    if (cValWords.length === dValWords.length) score += 5
-    if (cValWords.length === 1 && dValWords.length === 1) score += 8
+    if (cValWords.length === dValWords.length) score += 5 * valMul
+    if (cValWords.length === 1 && dValWords.length === 1) score += 8 * valMul
 
     const hasDigits = (s) => /\d/.test(s)
-    if (hasDigits(cValClean) === hasDigits(dValClean)) score += 12
-    
+    if (hasDigits(cValClean) === hasDigits(dValClean)) score += 12 * valMul
+
     const hasHtml = (s) => /<[a-z][\s\S]*>/i.test(s)
-    if (hasHtml(cValClean) === hasHtml(dValClean)) score += 10
+    if (hasHtml(cValClean) === hasHtml(dValClean)) score += 10 * valMul
 
     // 4. PREFER SAME CATEGORY/DOMAIN
     if (candidate.category === currentCard.value.category) score += 10
@@ -311,18 +395,48 @@ const generateChoices = (field, total = 4) => {
 
   const finalDistractors = []
   const seenValues = new Set([normCorrect])
-  
+
   const distractorTarget = Math.max(0, total - 1)
 
-  // Pick the top distractors from the entire pool
-  for (const item of scoredPool) {
+  /**
+   * Avant : on prenait toujours les N premiers après tri → avec scores identiques
+   * (souvent le cas pour les icônes, ou des questions Géographie au même gabarit),
+   * l’ordre venait du fetch DB → les 3 mêmes distracteurs à chaque fois.
+   * On mélange parmi un haut du classement, et si tous les scores sont plats on tire dans tout le pool mélangé.
+   */
+  const flatScores =
+    scoredPool.length > 0 &&
+    scoredPool[0].simScore === scoredPool[scoredPool.length - 1].simScore
+
+  const TOP_SLICE = Math.min(
+    scoredPool.length,
+    Math.max(distractorTarget * 12, 36)
+  )
+
+  let pickOrder = flatScores
+    ? shuffleArray([...scoredPool])
+    : shuffleArray(scoredPool.slice(0, TOP_SLICE))
+
+  const tryPushDistractor = (item) => {
     const c = item.card
     const val = normalize(c[field])
-    if (!seenValues.has(val)) {
-      finalDistractors.push(c)
-      seenValues.add(val)
-    }
+    if (seenValues.has(val)) return false
+    finalDistractors.push(c)
+    seenValues.add(val)
+    return true
+  }
+
+  for (const item of pickOrder) {
+    tryPushDistractor(item)
     if (finalDistractors.length >= distractorTarget) break
+  }
+
+  if (!flatScores && finalDistractors.length < distractorTarget) {
+    const rest = scoredPool.slice(TOP_SLICE)
+    for (const item of shuffleArray(rest)) {
+      tryPushDistractor(item)
+      if (finalDistractors.length >= distractorTarget) break
+    }
   }
 
   const finalChoices = finalDistractors.map(c => ({
