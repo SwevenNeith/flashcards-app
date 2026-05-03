@@ -15,6 +15,8 @@ const selectedCategoryId = computed(() => route.query.categoryId || '')
 const selectedCategoryName = computed(() => route.query.categoryName || '')
 const requestedCount = computed(() => parseInt(route.query.count) || 5)
 const optionsFromQuery = computed(() => route.query.options === 'true')
+/** 100 % révision : uniquement des cartes dues (due_date ≤ aujourd’hui), pas le mix 70/30 */
+const revision100FromQuery = computed(() => route.query.revision100 === 'true')
 /** Mode « Options » (Duo / Carré / Cash) : query ou quizz.options au reprendre */
 const optionsModeActive = ref(false)
 
@@ -608,40 +610,57 @@ onMounted(async () => {
       }
 
 
-      // SELECTION LOGIC: 70% due, 30% new
       const today = new Date().toISOString()
-      
-      const dueCards = selectionCards.filter(c => {
-        const rev = Array.isArray(c.Revision) ? c.Revision[0] : c.Revision
+
+      const getRev = (c) =>
+        Array.isArray(c.Revision) ? c.Revision[0] : c.Revision
+
+      const dueCards = selectionCards.filter((c) => {
+        const rev = getRev(c)
         return rev?.due_date && rev.due_date <= today
       })
-      
-      const newCards = selectionCards.filter(c => {
-        const rev = Array.isArray(c.Revision) ? c.Revision[0] : c.Revision
-        return !rev?.due_date // New cards have no due_date
-      })
 
-      const targetDueCount = Math.floor(requestedCount.value * 0.7)
-      const targetNewCount = requestedCount.value - targetDueCount
+      let finalCards = []
 
-      // Sort dueCards by mastery ascending (prioritize lower mastery), 
-      // but shuffle first to vary cards if multiple have same mastery
-      let sortedDuePool = shuffleArray(dueCards).sort((a, b) => {
-        const revA = Array.isArray(a.Revision) ? a.Revision[0] : a.Revision
-        const revB = Array.isArray(b.Revision) ? b.Revision[0] : b.Revision
-        return (revA?.maitrise || 0) - (revB?.maitrise || 0)
-      })
+      if (revision100FromQuery.value) {
+        // 100 % révision : uniquement des cartes dues, jusqu’à requestedCount (pas de cartes « nouvelles »)
+        const sortedDuePool = shuffleArray(dueCards).sort((a, b) => {
+          const revA = getRev(a)
+          const revB = getRev(b)
+          return (revA?.maitrise || 0) - (revB?.maitrise || 0)
+        })
+        finalCards = sortedDuePool.slice(0, requestedCount.value)
+      } else {
+        // SELECTION LOGIC: 70% due, 30% new
+        const newCards = selectionCards.filter((c) => {
+          const rev = getRev(c)
+          return !rev?.due_date
+        })
 
-      let selectedDue = sortedDuePool.slice(0, targetDueCount)
-      let selectedNew = shuffleArray(newCards).slice(0, targetNewCount)
+        const targetDueCount = Math.floor(requestedCount.value * 0.7)
+        const targetNewCount = requestedCount.value - targetDueCount
 
-      let finalCards = [...selectedDue, ...selectedNew]
+        let sortedDuePool = shuffleArray(dueCards).sort((a, b) => {
+          const revA = getRev(a)
+          const revB = getRev(b)
+          return (revA?.maitrise || 0) - (revB?.maitrise || 0)
+        })
 
-      // Fallback: If not enough cards in one category, fill from the other pools
-      if (finalCards.length < requestedCount.value) {
-        const remainingPool = selectionCards.filter(c => !finalCards.find(fc => fc.id === c.id))
-        const extras = shuffleArray(remainingPool).slice(0, requestedCount.value - finalCards.length)
-        finalCards = [...finalCards, ...extras]
+        let selectedDue = sortedDuePool.slice(0, targetDueCount)
+        let selectedNew = shuffleArray(newCards).slice(0, targetNewCount)
+
+        finalCards = [...selectedDue, ...selectedNew]
+
+        if (finalCards.length < requestedCount.value) {
+          const remainingPool = selectionCards.filter(
+            (c) => !finalCards.find((fc) => fc.id === c.id)
+          )
+          const extras = shuffleArray(remainingPool).slice(
+            0,
+            requestedCount.value - finalCards.length
+          )
+          finalCards = [...finalCards, ...extras]
+        }
       }
 
       quizCards.value = shuffleArray(finalCards)
@@ -660,7 +679,8 @@ onMounted(async () => {
               score: 0,
               to_review: [],
               answer: '',
-              options: optionsFromQuery.value
+              options: optionsFromQuery.value,
+              review: revision100FromQuery.value
             }
           ])
           .select()

@@ -2,11 +2,17 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { useDomainesStore } from '../stores/domaines'
 import { useCategoriesStore } from '../stores/categories'
+import { supabase } from '../lib/supabase'
 
 const props = defineProps({
   preselectedDomainId: {
     type: String,
     default: null
+  },
+  /** Compte des révisions dues par domaine (même source que la liste d’accueil) — évite les requêtes .in() énormes */
+  dueDomains: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -19,8 +25,49 @@ const selectionType = ref('Domaine') // 'Domaine' or 'Catégorie'
 const selectedDomain = ref('')
 const selectedCategory = ref('')
 const questionCount = ref(10)
-const countOptions = [10, 20, 30]
+const countOptions = [10, 20, 30, 50]
+const revisionFull = ref(false)
 const optionsEnabled = ref(false)
+/** Révisions dues pour une catégorie (requête légère avec jointure, pas de .in géant) */
+const categoryDueRevisionCount = ref(null)
+
+const dueRevisionInScope = computed(() => {
+  const domainId = selectedDomain.value
+  if (!domainId) return null
+  if (selectionType.value === 'Catégorie' && !selectedCategory.value) return null
+
+  if (selectionType.value === 'Domaine') {
+    const row = props.dueDomains.find((d) => d.id === domainId)
+    return row ? row.count : 0
+  }
+
+  return categoryDueRevisionCount.value
+})
+
+const showFullRevisionToggle = computed(() => {
+  const n = dueRevisionInScope.value
+  return typeof n === 'number' && n > 50
+})
+
+const fetchCategoryDueRevisionCount = async () => {
+  if (
+    selectionType.value !== 'Catégorie' ||
+    !selectedDomain.value ||
+    !selectedCategory.value
+  ) {
+    categoryDueRevisionCount.value = null
+    return
+  }
+
+  const today = new Date().toISOString()
+  const { count, error } = await supabase
+    .from('Revision')
+    .select('id, Flashcards!inner(category)', { count: 'exact', head: true })
+    .eq('Flashcards.category', selectedCategory.value)
+    .lte('due_date', today)
+
+  categoryDueRevisionCount.value = error ? 0 : (count ?? 0)
+}
 
 const sortedDomaines = computed(() => {
   return [...domainesStore.domaines].sort((a, b) => a.name.localeCompare(b.name))
@@ -60,6 +107,18 @@ watch(selectedDomain, () => {
   selectedCategory.value = ''
 })
 
+watch(
+  [selectedDomain, selectionType, selectedCategory],
+  () => {
+    fetchCategoryDueRevisionCount()
+  },
+  { immediate: true }
+)
+
+watch(showFullRevisionToggle, (show) => {
+  if (!show) revisionFull.value = false
+})
+
 const handleStart = () => {
   if (selectionType.value === 'Domaine' && !selectedDomain.value) return
   if (selectionType.value === 'Catégorie' && (!selectedDomain.value || !selectedCategory.value)) return
@@ -74,7 +133,8 @@ const handleStart = () => {
     categoryId: categoryObj?.id,
     categoryName: categoryObj?.name,
     count: questionCount.value,
-    options: optionsEnabled.value
+    options: optionsEnabled.value,
+    revision100: revisionFull.value
   })
 }
 </script>
@@ -169,16 +229,27 @@ const handleStart = () => {
           </div>
         </div>
 
-        <!-- Options (modes Duo / Carré / Cash dans le test) -->
+        <!-- 100% Révision (>50 cartes à réviser dans le périmètre) + Options (même ligne) -->
         <div class="form-group">
-          <div class="options-row">
-            <span class="main-label options-label">Options</span>
-            <label class="toggle">
-              <input type="checkbox" v-model="optionsEnabled" />
-              <span class="toggle-track" aria-hidden="true">
-                <span class="toggle-thumb"></span>
-              </span>
-            </label>
+          <div class="toggles-row">
+            <div v-if="showFullRevisionToggle" class="toggle-pair">
+              <span class="main-label options-label revision-label">100% Révision</span>
+              <label class="toggle">
+                <input type="checkbox" v-model="revisionFull" />
+                <span class="toggle-track" aria-hidden="true">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+            </div>
+            <div class="toggle-pair options-toggle-pair">
+              <span class="main-label options-label">Options</span>
+              <label class="toggle">
+                <input type="checkbox" v-model="optionsEnabled" />
+                <span class="toggle-track" aria-hidden="true">
+                  <span class="toggle-thumb"></span>
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -418,13 +489,24 @@ label:not(.main-label):not(.radio-item) {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.options-row {
+.toggles-row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.6rem;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
   width: 100%;
+}
+
+.toggle-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.options-toggle-pair {
+  margin-left: auto;
 }
 
 .options-label {
@@ -432,6 +514,11 @@ label:not(.main-label):not(.radio-item) {
   display: inline-flex;
   align-items: center;
   line-height: 1.1;
+  height: 22px;
+}
+
+.revision-label {
+  white-space: nowrap;
 }
 
 .toggle {

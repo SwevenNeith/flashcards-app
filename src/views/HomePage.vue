@@ -73,7 +73,8 @@ const handleStartTest = (data) => {
       categoryId: data.categoryId,
       categoryName: data.categoryName,
       count: data.count,
-      options: data.options ? 'true' : 'false'
+      options: data.options ? 'true' : 'false',
+      revision100: data.revision100 ? 'true' : 'false'
     }
   })
 }
@@ -147,6 +148,7 @@ const closeTestForm = () => {
       <TestForm 
         v-if="showForm" 
         :preselectedDomainId="preselectedDomainId"
+        :dueDomains="dueDomains"
         @close="closeTestForm"
         @start="handleStartTest"
       />
