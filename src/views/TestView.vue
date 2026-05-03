@@ -164,38 +164,30 @@ const SKIP_AFTER_QUEL = new Set([
 ])
 
 /**
- * Groupes de synonymes (culture générale) : même « famille » quelle ville / capitale, roi / souverain, etc.
+ * Règle simple : le mot après « quel(le)(s) » doit être le même (dynamique, pas de liste par thème).
+ * Quelques alias optionnels pour pluriels / équivalents courants — à compléter au besoin, sans centaines d’entrées.
  */
-const QUEL_TYPE_GROUPS = [
-  new Set(['ville', 'capitale', 'cite', 'commune', 'metropole', 'agglomeration']),
-  new Set(['pays', 'nation', 'royaume', 'empire', 'republique', 'continent', 'region']),
-  new Set([
-    'roi', 'reine', 'empereur', 'imperatrice', 'souverain', 'monarque', 'pharaon', 'tsar', 'pape', 'duc', 'comte',
-  ]),
-  new Set(['guerre', 'bataille', 'conflit', 'campagne', 'siege', 'offensive']),
-  new Set(['date', 'annee', 'jour', 'mois', 'siecle', 'moment']),
-  new Set(['trait', 'traite', 'accord', 'paix', 'protocole']),
-  new Set(['film', 'comedie', 'drame', 'realisateur']),
-  new Set(['livre', 'roman', 'oeuvre', 'piece']),
-  new Set(['auteur', 'ecrivain', 'philosophe', 'compositeur', 'scientifique']),
-  new Set(['invention', 'inventeur', 'decouverte']),
-]
+const QUEL_HEAD_CANON = {
+  animaux: 'animal',
+  capitale: 'ville',
+  cite: 'ville',
+  commune: 'ville',
+  villes: 'ville',
+  agglomeration: 'ville',
+  metropole: 'ville',
+  reine: 'roi',
+  imperatrice: 'roi',
+  empereur: 'roi',
+}
 
-const quelHeadGroup = (head) => {
-  if (!head) return null
-  for (const g of QUEL_TYPE_GROUPS) {
-    if (g.has(head)) return g
-  }
-  return null
+const canonQuelHead = (h) => {
+  if (!h) return ''
+  return QUEL_HEAD_CANON[h] ?? h
 }
 
 const quelHeadsCompatible = (a, b) => {
   if (!a || !b) return null
-  if (a === b) return true
-  const ga = quelHeadGroup(a)
-  const gb = quelHeadGroup(b)
-  if (ga && ga === gb) return true
-  return false
+  return canonQuelHead(a) === canonQuelHead(b) ? true : false
 }
 
 /**
@@ -294,6 +286,37 @@ const generateChoices = (field, total = 4) => {
   const currentQuelHead = extractQuelHead(
     typeof normName === 'string' ? normName : ''
   )
+
+  const currentCatNorm = normalize(
+    typeof currentCard.value.Categories?.name === 'string'
+      ? currentCard.value.Categories.name
+      : ''
+  )
+  /** Sous-catégorie dont le libellé rappelle le mot après « quel » (ex. « Animaux » + quel animal) */
+  const currentCatEchoesQuelHead =
+    !!currentQuelHead &&
+    currentCatNorm
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+      .some((w) => quelHeadsCompatible(currentQuelHead, w) === true)
+
+  /**
+   * Même « type » de question : même mot après quel (canonisé), ou même catégorie si son nom va avec ce mot.
+   */
+  const cardMatchesSameQuelHead = (cand) => {
+    if (!currentQuelHead) return false
+    const candNameNorm = normalize(typeof cand.name === 'string' ? cand.name : '')
+    const ch = candNameNorm ? extractQuelHead(candNameNorm) : null
+    if (ch && quelHeadsCompatible(currentQuelHead, ch) === true) return true
+    if (
+      currentCatEchoesQuelHead &&
+      cand.category &&
+      cand.category === currentCard.value.category
+    ) {
+      return true
+    }
+    return false
+  }
 
   /**
    * Réponses du type « Zyra - R », « Zyra - A » : on veut surtout d’autres sorts du même champion,
@@ -402,7 +425,7 @@ const generateChoices = (field, total = 4) => {
       if (quelCompat === true) score += 130
       else if (quelCompat === false) score -= 220
     } else if (currentQuelHead && !candQuelHead) {
-      score -= 45
+      score -= 78
     }
 
     if (dashPairCorrect && (field === 'name' || field === 'description')) {
@@ -466,6 +489,8 @@ const generateChoices = (field, total = 4) => {
     if (candidate.category === currentCard.value.category) score += 10
     if (candidate.domain === currentCard.value.domain) score += 5
 
+    if (currentQuelHead && cardMatchesSameQuelHead(candidate)) score += 62
+
     return score
   }
 
@@ -524,6 +549,11 @@ const generateChoices = (field, total = 4) => {
     const poolSecondary = scoredPool.filter((x) => !cardMatchesEntityAnchor(x.card))
     pickDistractorsFromPool(poolPrimary)
     if (finalDistractors.length < distractorTarget) pickDistractorsFromPool(poolSecondary)
+  } else if (currentQuelHead && (field === 'name' || field === 'description')) {
+    const poolQuel = scoredPool.filter((x) => cardMatchesSameQuelHead(x.card))
+    const poolOther = scoredPool.filter((x) => !cardMatchesSameQuelHead(x.card))
+    pickDistractorsFromPool(poolQuel)
+    if (finalDistractors.length < distractorTarget) pickDistractorsFromPool(poolOther)
   } else {
     pickDistractorsFromPool(scoredPool)
   }
