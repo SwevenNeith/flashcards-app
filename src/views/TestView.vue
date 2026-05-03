@@ -294,7 +294,68 @@ const generateChoices = (field, total = 4) => {
   const currentQuelHead = extractQuelHead(
     typeof normName === 'string' ? normName : ''
   )
-  
+
+  /**
+   * Réponses du type « Zyra - R », « Zyra - A » : on veut surtout d’autres sorts du même champion,
+   * pas « Amumu - R » (même lettre, autre perso).
+   */
+  const parseDashPair = (raw) => {
+    if (typeof raw !== 'string') return null
+    const t = raw.trim()
+    const m = t.match(/^(.+?)\s*-\s*(.+)$/)
+    if (!m) return null
+    const left = m[1].trim()
+    const right = m[2].trim()
+    if (left.length < 1 || right.length < 1) return null
+    if (right.length > 12) return null
+    return {
+      entityNorm: normalize(left),
+      variantNorm: normalize(right),
+    }
+  }
+
+  const dashPairCorrect =
+    field === 'name' || field === 'description'
+      ? parseDashPair(
+          typeof correctValue === 'string' ? correctValue : String(correctValue ?? '')
+        )
+      : null
+
+  const titleDashPair = parseDashPair(
+    typeof currentCard.value.name === 'string' ? currentCard.value.name : ''
+  )
+  const descLeadPlain =
+    field === 'description' && typeof currentCard.value.description === 'string'
+      ? currentCard.value.description
+          .replace(/<[^>]*>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 120)
+      : ''
+  const openingDashPair = descLeadPlain ? parseDashPair(descLeadPlain) : null
+
+  /** Entité dominante (ex. zyra) : réponse « X - R », ou titre « X - … », ou début de description */
+  const entityAnchorNorm =
+    dashPairCorrect?.entityNorm ??
+    titleDashPair?.entityNorm ??
+    openingDashPair?.entityNorm ??
+    null
+
+  const candidateEntityNormFromCard = (cand) => {
+    const n = typeof cand.name === 'string' ? parseDashPair(cand.name)?.entityNorm : null
+    if (n) return n
+    if (field === 'description' && typeof cand.description === 'string') {
+      const plain = cand.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+      return parseDashPair(plain.slice(0, 120))?.entityNorm ?? null
+    }
+    return null
+  }
+
+  const cardMatchesEntityAnchor = (cand) => {
+    if (!entityAnchorNorm) return false
+    return candidateEntityNormFromCard(cand) === entityAnchorNorm
+  }
+
   const isGoodDistractor = (c) => {
     if (!c[field]) return false
     const dField = normalize(c[field])
@@ -342,6 +403,30 @@ const generateChoices = (field, total = 4) => {
       else if (quelCompat === false) score -= 220
     } else if (currentQuelHead && !candQuelHead) {
       score -= 45
+    }
+
+    if (dashPairCorrect && (field === 'name' || field === 'description')) {
+      const rawCand = candidate[field]
+      const dashCand =
+        typeof rawCand === 'string' ? parseDashPair(rawCand) : null
+      if (dashCand) {
+        const sameEntity = dashPairCorrect.entityNorm === dashCand.entityNorm
+        const sameVariant = dashPairCorrect.variantNorm === dashCand.variantNorm
+        if (sameEntity && !sameVariant) score += 168
+        else if (!sameEntity && sameVariant) score -= 235
+        else if (!sameEntity && !sameVariant) score -= 42
+      } else {
+        score -= 38
+      }
+    } else if (
+      !dashPairCorrect &&
+      entityAnchorNorm &&
+      (field === 'name' || field === 'description')
+    ) {
+      const ce = candidateEntityNormFromCard(candidate)
+      if (ce === entityAnchorNorm) score += 172
+      else if (ce) score -= 130
+      else score -= 35
     }
 
     // 1. AUTONOMOUS KEYWORD INTERSECTION (Questions similarity)
@@ -398,25 +483,6 @@ const generateChoices = (field, total = 4) => {
 
   const distractorTarget = Math.max(0, total - 1)
 
-  /**
-   * Avant : on prenait toujours les N premiers après tri → avec scores identiques
-   * (souvent le cas pour les icônes, ou des questions Géographie au même gabarit),
-   * l’ordre venait du fetch DB → les 3 mêmes distracteurs à chaque fois.
-   * On mélange parmi un haut du classement, et si tous les scores sont plats on tire dans tout le pool mélangé.
-   */
-  const flatScores =
-    scoredPool.length > 0 &&
-    scoredPool[0].simScore === scoredPool[scoredPool.length - 1].simScore
-
-  const TOP_SLICE = Math.min(
-    scoredPool.length,
-    Math.max(distractorTarget * 12, 36)
-  )
-
-  let pickOrder = flatScores
-    ? shuffleArray([...scoredPool])
-    : shuffleArray(scoredPool.slice(0, TOP_SLICE))
-
   const tryPushDistractor = (item) => {
     const c = item.card
     const val = normalize(c[field])
@@ -426,17 +492,40 @@ const generateChoices = (field, total = 4) => {
     return true
   }
 
-  for (const item of pickOrder) {
-    tryPushDistractor(item)
-    if (finalDistractors.length >= distractorTarget) break
+  /**
+   * Mélange + haut du classement ; si une entité « X - … » est connue, on remplit d’abord
+   * uniquement avec des cartes de la même entité (titre / début description), puis le reste.
+   */
+  const pickDistractorsFromPool = (pool) => {
+    if (!pool.length) return
+    const flat =
+      pool.length > 0 && pool[0].simScore === pool[pool.length - 1].simScore
+    const topSlice = Math.min(
+      pool.length,
+      Math.max(distractorTarget * 12, 36)
+    )
+    const order = flat
+      ? shuffleArray([...pool])
+      : shuffleArray(pool.slice(0, topSlice))
+    for (const item of order) {
+      tryPushDistractor(item)
+      if (finalDistractors.length >= distractorTarget) return
+    }
+    if (!flat && pool.length > topSlice) {
+      for (const item of shuffleArray(pool.slice(topSlice))) {
+        tryPushDistractor(item)
+        if (finalDistractors.length >= distractorTarget) return
+      }
+    }
   }
 
-  if (!flatScores && finalDistractors.length < distractorTarget) {
-    const rest = scoredPool.slice(TOP_SLICE)
-    for (const item of shuffleArray(rest)) {
-      tryPushDistractor(item)
-      if (finalDistractors.length >= distractorTarget) break
-    }
+  if (entityAnchorNorm) {
+    const poolPrimary = scoredPool.filter((x) => cardMatchesEntityAnchor(x.card))
+    const poolSecondary = scoredPool.filter((x) => !cardMatchesEntityAnchor(x.card))
+    pickDistractorsFromPool(poolPrimary)
+    if (finalDistractors.length < distractorTarget) pickDistractorsFromPool(poolSecondary)
+  } else {
+    pickDistractorsFromPool(scoredPool)
   }
 
   const finalChoices = finalDistractors.map(c => ({
