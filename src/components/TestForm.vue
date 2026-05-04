@@ -26,7 +26,7 @@ const selectedDomain = ref('')
 const selectedCategory = ref('')
 const questionCount = ref(10)
 const countOptions = [10, 20, 30, 50]
-const revisionFull = ref(false)
+const revisionFull = ref(true)
 const optionsEnabled = ref(false)
 /** Révisions dues pour une catégorie (requête légère avec jointure, pas de .in géant) */
 const categoryDueRevisionCount = ref(null)
