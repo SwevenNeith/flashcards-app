@@ -153,7 +153,7 @@ const shuffleArray = (array) => {
   return newArr
 }
 
-/** Mots ignorés après quel/quelle pour atteindre le « type » de réponse (nom commun attendu) */
+/** Mots ignorés après un interrogatif pour atteindre le « thème » (nom commun attendu) */
 const SKIP_AFTER_QUEL = new Set([
   'est', 'sont', 'etait', 'etaient', 'fut', 'furent', 'sera', 'seront', 'soit',
   'a', 'ont', 'avait', 'avaient', 'ete', 'fait', 'faite', 'etre',
@@ -161,28 +161,40 @@ const SKIP_AFTER_QUEL = new Set([
   'ce', 'cet', 'cette', 'ces', 'mon', 'ma', 'mes', 'ton', 'ta', 'tes', 'son',
   'sa', 'ses', 'leur', 'leurs', 'qui', 'que', 'quoi', 'dont', 'ou',
   'plus', 'moins', 'tres', 'trop', 'si', 'ne', 'pas', 'n',
+  'meme', 'memes',
 ])
 
 /**
- * Règle simple : le mot après « quel(le)(s) » doit être le même (dynamique, pas de liste par thème).
- * Quelques alias optionnels pour pluriels / équivalents courants — à compléter au besoin, sans centaines d’entrées.
+ * Normalisation du mot-thème après l’interrogatif : uniquement des règles de suffixe (aucune liste de thèmes / synonymes).
+ * Même « capitale » vs « ville » ne sont pas fusionnés — il faut des libellés cohérents entre cartes, ou s’appuyer sur la catégorie.
  */
-const QUEL_HEAD_CANON = {
-  animaux: 'animal',
-  capitale: 'ville',
-  cite: 'ville',
-  commune: 'ville',
-  villes: 'ville',
-  agglomeration: 'ville',
-  metropole: 'ville',
-  reine: 'roi',
-  imperatrice: 'roi',
-  empereur: 'roi',
+const stemFrenchThemeHeadMorph = (w) => {
+  if (!w || w.length < 2) return w
+  let x = w
+
+  if (x.length >= 6 && x.endsWith('aux')) {
+    x = x.slice(0, -3) + 'al'
+    return x
+  }
+
+  if (x.length >= 4 && x.endsWith('eux')) {
+    x = x.slice(0, -3) + 'eu'
+    return x
+  }
+
+  if (x.length >= 4 && x.endsWith('s') && !x.endsWith('ss')) {
+    const singular = x.slice(0, -1)
+    if (singular.length >= 3) return singular
+  }
+
+  return x
 }
 
 const canonQuelHead = (h) => {
   if (!h) return ''
-  return QUEL_HEAD_CANON[h] ?? h
+  const w = String(h).trim().toLowerCase()
+  if (!w) return ''
+  return stemFrenchThemeHeadMorph(w)
 }
 
 const quelHeadsCompatible = (a, b) => {
@@ -191,11 +203,30 @@ const quelHeadsCompatible = (a, b) => {
 }
 
 /**
- * Texte déjà normalisé (minuscules, sans accents) comme dans generateChoices → normalize()
+ * Mot-thème après un interrogatif dans l’énoncé (name), déjà normalisé comme dans generateChoices → normalize().
+ *
+ * On privilégie le **premier** « quel / quelle / quels / quelles » : c’est en général le type de question
+ * (ex. « Quel jeu … »), alors que le **dernier** interrogatif tombait souvent sur « comment », « où », etc.
+ * plus loin dans la phrase — ce qui cassait le filtrage « même thème après quel » et laissait des distracteurs hors sujet.
+ * S’il n’y a pas de famille « quel* », on garde le **dernier** interrogatif (combien, comment seul, …).
  */
-const extractQuelHead = (normalizedQuestion) => {
+const extractInterrogativeThemeHead = (normalizedQuestion) => {
   if (!normalizedQuestion || typeof normalizedQuestion !== 'string') return null
-  const re = /\b(quelle|quel|quels|quelles)\b/g
+
+  const quelFirst = /\b(quelles|quelle|quels|quel)\b/
+  const qm = quelFirst.exec(normalizedQuestion)
+  if (qm) {
+    let after = normalizedQuestion.slice(qm.index + qm[0].length).trim()
+    after = after.replace(/^[,;:]+/, '').trim()
+    const words = after.split(/\s+/).filter(Boolean)
+    let i = 0
+    while (i < words.length && SKIP_AFTER_QUEL.has(words[i])) i++
+    if (i >= words.length) return null
+    return words[i]
+  }
+
+  const re =
+    /\b(combien|pourquoi|comment|quelles|quelle|quels|quel|quand|qui|quoi|ou)\b/g
   let lastMatch = null
   let m
   while ((m = re.exec(normalizedQuestion)) !== null) lastMatch = m
@@ -283,8 +314,16 @@ const generateChoices = (field, total = 4) => {
   const normCorrect = normalize(correctValue)
   const normName = normalize(currentCard.value.name)
   const normDesc = normalize(currentCard.value.description)
-  const currentQuelHead = extractQuelHead(
-    typeof normName === 'string' ? normName : ''
+
+  /**
+   * Énoncé = champ name ; la description porte la réponse (parfois longue).
+   * Thème interrogatif et mots communs : toujours depuis name (carte courante et candidates).
+   */
+  const questionTextForThemeAndKeywords =
+    typeof currentCard.value.name === 'string' ? currentCard.value.name : ''
+
+  const currentThemeHead = extractInterrogativeThemeHead(
+    normalize(questionTextForThemeAndKeywords)
   )
 
   const currentCatNorm = normalize(
@@ -292,30 +331,32 @@ const generateChoices = (field, total = 4) => {
       ? currentCard.value.Categories.name
       : ''
   )
-  /** Sous-catégorie dont le libellé rappelle le mot après « quel » (ex. « Animaux » + quel animal) */
-  const currentCatEchoesQuelHead =
-    !!currentQuelHead &&
+  /** Sous-catégorie dont le libellé rappelle le thème après interrogatif (ex. « Animaux » + quel animal) */
+  const currentCatEchoesThemeHead =
+    !!currentThemeHead &&
     currentCatNorm
       .split(/\s+/)
       .filter((w) => w.length > 2)
-      .some((w) => quelHeadsCompatible(currentQuelHead, w) === true)
+      .some((w) => quelHeadsCompatible(currentThemeHead, w) === true)
 
   /**
-   * Même « type » de question : même mot après quel (canonisé), ou même catégorie si son nom va avec ce mot.
+   * Même « type » de question : même thème après interrogatif (canonisé), ou même catégorie si son nom va avec ce thème.
+   */
+  /**
+   * Premier tirage : même mot-thème après l’interrogatif (ex. « jeu » avec « jeu » uniquement).
+   * Sans ça, une même catégorie « Sport » faisait entrer « Quelle patineuse », « En combien… », etc.
    */
   const cardMatchesSameQuelHead = (cand) => {
-    if (!currentQuelHead) return false
-    const candNameNorm = normalize(typeof cand.name === 'string' ? cand.name : '')
-    const ch = candNameNorm ? extractQuelHead(candNameNorm) : null
-    if (ch && quelHeadsCompatible(currentQuelHead, ch) === true) return true
-    if (
-      currentCatEchoesQuelHead &&
-      cand.category &&
-      cand.category === currentCard.value.category
-    ) {
-      return true
+    if (currentThemeHead) {
+      const candQ = typeof cand.name === 'string' ? cand.name : ''
+      const ch = extractInterrogativeThemeHead(normalize(candQ))
+      return !!(ch && quelHeadsCompatible(currentThemeHead, ch) === true)
     }
-    return false
+    return (
+      currentCatEchoesThemeHead &&
+      !!cand.category &&
+      cand.category === currentCard.value.category
+    )
   }
 
   /**
@@ -347,27 +388,19 @@ const generateChoices = (field, total = 4) => {
   const titleDashPair = parseDashPair(
     typeof currentCard.value.name === 'string' ? currentCard.value.name : ''
   )
-  const descLeadPlain =
-    field === 'description' && typeof currentCard.value.description === 'string'
-      ? currentCard.value.description
-          .replace(/<[^>]*>/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-          .slice(0, 120)
-      : ''
-  const openingDashPair = descLeadPlain ? parseDashPair(descLeadPlain) : null
 
-  /** Entité dominante (ex. zyra) : réponse « X - R », ou titre « X - … », ou début de description */
+  /**
+   * Entité « Zyra » depuis « Zyra - R » : titre = name, description = texte du sort uniquement.
+   * Ancrage prioritaire sur name ; valeur attendue si déjà au format X - Y ; secours CG ancien format.
+   */
   const entityAnchorNorm =
-    dashPairCorrect?.entityNorm ??
-    titleDashPair?.entityNorm ??
-    openingDashPair?.entityNorm ??
-    null
+    dashPairCorrect?.entityNorm ?? titleDashPair?.entityNorm ?? null
 
   const candidateEntityNormFromCard = (cand) => {
-    const n = typeof cand.name === 'string' ? parseDashPair(cand.name)?.entityNorm : null
-    if (n) return n
-    if (field === 'description' && typeof cand.description === 'string') {
+    const fromName =
+      typeof cand.name === 'string' ? parseDashPair(cand.name)?.entityNorm : null
+    if (fromName) return fromName
+    if (typeof cand.description === 'string') {
       const plain = cand.description.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
       return parseDashPair(plain.slice(0, 120))?.entityNorm ?? null
     }
@@ -408,30 +441,38 @@ const generateChoices = (field, total = 4) => {
     )
   }
 
-  const correctWords = getSignificantWords(currentCard.value.name)
+  const correctWords = getSignificantWords(questionTextForThemeAndKeywords)
 
   const getSimilarityScore = (candidate) => {
     const candidateVal = normalize(candidate[field])
     if (typeof candidateVal !== 'string' || typeof normCorrect !== 'string') return 0
     let score = 0
 
-    const candNormName = normalize(candidate.name)
-    const candQuelHead =
-      typeof candNormName === 'string' ? extractQuelHead(candNormName) : null
+    const candKeyText = typeof candidate.name === 'string' ? candidate.name : ''
+    const candNormName = normalize(candKeyText)
+    const candThemeHead =
+      typeof candNormName === 'string'
+        ? extractInterrogativeThemeHead(candNormName)
+        : null
 
-    let quelCompat = null
-    if (currentQuelHead && candQuelHead) {
-      quelCompat = quelHeadsCompatible(currentQuelHead, candQuelHead)
-      if (quelCompat === true) score += 130
-      else if (quelCompat === false) score -= 220
-    } else if (currentQuelHead && !candQuelHead) {
+    let themeCompat = null
+    if (currentThemeHead && candThemeHead) {
+      themeCompat = quelHeadsCompatible(currentThemeHead, candThemeHead)
+      if (themeCompat === true) score += 130
+      else if (themeCompat === false) score -= 220
+    } else if (currentThemeHead && !candThemeHead) {
       score -= 78
     }
 
     if (dashPairCorrect && (field === 'name' || field === 'description')) {
-      const rawCand = candidate[field]
-      const dashCand =
-        typeof rawCand === 'string' ? parseDashPair(rawCand) : null
+      let dashCand = null
+      if (typeof candidate.name === 'string') {
+        dashCand = parseDashPair(candidate.name)
+      }
+      if (!dashCand) {
+        const rawCand = candidate[field]
+        dashCand = typeof rawCand === 'string' ? parseDashPair(rawCand) : null
+      }
       if (dashCand) {
         const sameEntity = dashPairCorrect.entityNorm === dashCand.entityNorm
         const sameVariant = dashPairCorrect.variantNorm === dashCand.variantNorm
@@ -452,19 +493,19 @@ const generateChoices = (field, total = 4) => {
       else score -= 35
     }
 
-    // 1. AUTONOMOUS KEYWORD INTERSECTION (Questions similarity)
-    const candidateWords = getSignificantWords(candidate.name)
+    // 1. Mots significatifs en commun (questions proches)
+    const candidateWords = getSignificantWords(candKeyText)
     let intersectionCount = 0
     for (const word of correctWords) {
       if (candidateWords.has(word)) intersectionCount++
     }
-    const intersectMul = quelCompat === false ? 0.12 : 1
-    score += intersectionCount * 30 * intersectMul
+    const intersectMul = themeCompat === false ? 0.12 : 1
+    score += intersectionCount * 34 * intersectMul
 
-    // 2. STRUCTURAL MATCH (Same starting words in question) — pas si « quel X » vs « quel Y » incompatible
+    // 2. STRUCTURAL MATCH (Same starting words in question)
     const cNameWords = normalize(currentCard.value.name).split(/\s+/)
     const dNameWords = normalize(candidate.name).split(/\s+/)
-    if (quelCompat !== false) {
+    if (themeCompat !== false) {
       if (cNameWords[0] === dNameWords[0]) score += 15
       if (cNameWords[1] && cNameWords[1] === dNameWords[1]) score += 8
     }
@@ -474,7 +515,7 @@ const generateChoices = (field, total = 4) => {
     const dValClean = candidateVal.trim()
     const cValWords = cValClean.split(/\s+/)
     const dValWords = dValClean.split(/\s+/)
-    const valMul = quelCompat === false ? 0.2 : 1
+    const valMul = themeCompat === false ? 0.2 : 1
 
     if (cValWords.length === dValWords.length) score += 5 * valMul
     if (cValWords.length === 1 && dValWords.length === 1) score += 8 * valMul
@@ -485,11 +526,20 @@ const generateChoices = (field, total = 4) => {
     const hasHtml = (s) => /<[a-z][\s\S]*>/i.test(s)
     if (hasHtml(cValClean) === hasHtml(dValClean)) score += 10 * valMul
 
-    // 4. PREFER SAME CATEGORY/DOMAIN
-    if (candidate.category === currentCard.value.category) score += 10
-    if (candidate.domain === currentCard.value.domain) score += 5
+    const themeMatch = themeCompat === true
+    const catMatch =
+      !!candidate.category &&
+      !!currentCard.value.category &&
+      candidate.category === currentCard.value.category
+    const wordOverlap = intersectionCount >= 1
 
-    if (currentQuelHead && cardMatchesSameQuelHead(candidate)) score += 62
+    if (themeMatch && catMatch && wordOverlap) score += 215
+    else if (themeMatch && catMatch) score += 105
+    else if (themeMatch && wordOverlap) score += 92
+    else if (catMatch && wordOverlap) score += 78
+    else if (catMatch) score += 22
+
+    if (candidate.domain === currentCard.value.domain) score += 6
 
     return score
   }
@@ -549,7 +599,7 @@ const generateChoices = (field, total = 4) => {
     const poolSecondary = scoredPool.filter((x) => !cardMatchesEntityAnchor(x.card))
     pickDistractorsFromPool(poolPrimary)
     if (finalDistractors.length < distractorTarget) pickDistractorsFromPool(poolSecondary)
-  } else if (currentQuelHead && (field === 'name' || field === 'description')) {
+  } else if (currentThemeHead && (field === 'name' || field === 'description')) {
     const poolQuel = scoredPool.filter((x) => cardMatchesSameQuelHead(x.card))
     const poolOther = scoredPool.filter((x) => !cardMatchesSameQuelHead(x.card))
     pickDistractorsFromPool(poolQuel)
@@ -582,9 +632,23 @@ const cashCorrectText = computed(() => {
   return field === 'description' ? getPlainText(str) : str.trim()
 })
 
+/**
+ * Cash désactivé : icône, ou réponse (champ ciblé) trop longue, ou — uniquement quand c’est le name à saisir —
+ * le name contient « ? » (énoncé-question : le cash n’a pas de sens). Si c’est la description à trouver,
+ * le « ? » dans le titre de carte ne désactive pas le cash.
+ */
 const isCashDisabled = computed(() => {
   if (targetField.value === 'icon') return true
-  return cashCorrectText.value.length > cashMaxLength
+  if (cashCorrectText.value.length > cashMaxLength) return true
+  if (targetField.value === 'name') {
+    if (
+      typeof currentCard.value?.name === 'string' &&
+      currentCard.value.name.includes('?')
+    ) {
+      return true
+    }
+  }
+  return false
 })
 
 const cashExpectedKindLabel = computed(() => {
@@ -598,7 +662,18 @@ const cashExpectedKindLabel = computed(() => {
 const cashDisabledTitle = computed(() => {
   if (!isCashDisabled.value) return 'Réponse libre'
   if (targetField.value === 'icon') return 'Option indisponible pour une question image'
-  return `Option indisponible : réponse trop longue (>${cashMaxLength} caractères)`
+  if (cashCorrectText.value.length > cashMaxLength) {
+    return `Option indisponible : réponse trop longue (>${cashMaxLength} caractères)`
+  }
+  if (targetField.value === 'name') {
+    if (
+      typeof currentCard.value?.name === 'string' &&
+      currentCard.value.name.includes('?')
+    ) {
+      return 'Option indisponible : le nom à saisir contient « ? »'
+    }
+  }
+  return 'Réponse libre'
 })
 
 const selectAnswerMode = (mode) => {

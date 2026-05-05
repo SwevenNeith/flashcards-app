@@ -26,7 +26,7 @@ const selectedDomain = ref('')
 const selectedCategory = ref('')
 const questionCount = ref(10)
 const countOptions = [10, 20, 30, 50]
-const revisionFull = ref(true)
+const revisionFull = ref(false)
 const optionsEnabled = ref(false)
 /** Révisions dues pour une catégorie (requête légère avec jointure, pas de .in géant) */
 const categoryDueRevisionCount = ref(null)
@@ -115,9 +115,13 @@ watch(
   { immediate: true }
 )
 
-watch(showFullRevisionToggle, (show) => {
-  if (!show) revisionFull.value = false
-})
+watch(
+  showFullRevisionToggle,
+  (show) => {
+    revisionFull.value = show
+  },
+  { immediate: true }
+)
 
 const handleStart = () => {
   if (selectionType.value === 'Domaine' && !selectedDomain.value) return
