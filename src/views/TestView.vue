@@ -1037,6 +1037,25 @@ const saveAndExit = async () => {
     const now = new Date()
     const intervalMap = { 1: 1, 2: 3, 3: 7, 4: 14, 5: 30 }
 
+    const parseYYYYMMDDToLocalDate = (s) => {
+      if (!s || typeof s !== 'string') return null
+      const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+      if (!m) return null
+      const y = Number(m[1])
+      const mo = Number(m[2])
+      const d = Number(m[3])
+      if (!y || !mo || !d) return null
+      // Midi local pour éviter les soucis DST / timezone lors des +N jours
+      return new Date(y, mo - 1, d, 12, 0, 0, 0)
+    }
+
+    const formatLocalDateYYYYMMDD = (dt) => {
+      const y = dt.getFullYear()
+      const m = String(dt.getMonth() + 1).padStart(2, '0')
+      const d = String(dt.getDate()).padStart(2, '0')
+      return `${y}-${m}-${d}`
+    }
+
     const updates = quizCards.value.map(async (card) => {
       const isFailed = failedCards.value.some(fc => fc.id === card.id)
       const rev = Array.isArray(card.Revision) ? card.Revision[0] : card.Revision
@@ -1052,9 +1071,11 @@ const saveAndExit = async () => {
       if (newMaitrise === 0) {
         newDueDate = now
       } else {
-        // Use existing due_date as baseline, or NOW if it was null
-        const baseline = rev?.due_date ? new Date(rev.due_date) : now
-        newDueDate = new Date(baseline)
+        // IMPORTANT: base sur la due_date stockée (date "pure"), pas sur maintenant.
+        // Fallback uniquement si la carte n’avait pas encore de due_date.
+        const baseline =
+          parseYYYYMMDDToLocalDate(rev?.due_date) ?? new Date(now.getTime())
+        newDueDate = new Date(baseline.getTime())
         const daysToAdd = intervalMap[newMaitrise]
         newDueDate.setDate(newDueDate.getDate() + daysToAdd)
       }
@@ -1063,7 +1084,7 @@ const saveAndExit = async () => {
         .from('Revision')
         .update({ 
           maitrise: newMaitrise,
-          due_date: newDueDate.toISOString().split('T')[0]
+          due_date: formatLocalDateYYYYMMDD(newDueDate)
         })
         .eq('flashcard', card.id)
     })
