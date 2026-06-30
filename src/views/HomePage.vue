@@ -74,7 +74,8 @@ const handleStartTest = (data) => {
       categoryName: data.categoryName,
       count: data.count,
       options: data.options ? 'true' : 'false',
-      revision100: data.revision100 ? 'true' : 'false'
+      revision100: data.revision100 ? 'true' : 'false',
+      questions100: data.questions100 ? 'true' : 'false'
     }
   })
 }
@@ -88,7 +89,9 @@ const resumeQuizz = (quizz) => {
       domainName: quizz.Domaines?.name,
       categoryId: quizz.category,
       categoryName: quizz.Categories?.name,
-      options: quizz.use_options ? 'true' : 'false'
+      options: quizz.options ? 'true' : 'false',
+      revision100: quizz.review ? 'true' : 'false',
+      questions100: quizz.questions100 ? 'true' : 'false'
     }
   })
 }

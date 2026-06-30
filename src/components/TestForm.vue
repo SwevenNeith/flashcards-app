@@ -28,6 +28,7 @@ const questionCount = ref(10)
 const countOptions = [10, 20, 30, 50]
 const revisionFull = ref(false)
 const optionsEnabled = ref(false)
+const questionsFull = ref(false)
 /** Révisions dues pour une catégorie (requête légère avec jointure, pas de .in géant) */
 const categoryDueRevisionCount = ref(null)
 
@@ -138,7 +139,8 @@ const handleStart = () => {
     categoryName: categoryObj?.name,
     count: questionCount.value,
     options: optionsEnabled.value,
-    revision100: revisionFull.value
+    revision100: revisionFull.value,
+    questions100: questionsFull.value
   })
 }
 </script>
@@ -233,10 +235,10 @@ const handleStart = () => {
           </div>
         </div>
 
-        <!-- 100% Révision (>50 cartes à réviser dans le périmètre) + Options (même ligne) -->
+        <!-- 100% Révision (gauche) · 100% Questions (centre) · Options (droite) -->
         <div class="form-group">
           <div class="toggles-row">
-            <div v-if="showFullRevisionToggle" class="toggle-pair">
+            <div v-if="showFullRevisionToggle" class="toggle-pair toggle-pair-revision">
               <span class="main-label options-label revision-label">100% Révision</span>
               <label class="toggle">
                 <input type="checkbox" v-model="revisionFull" />
@@ -245,7 +247,18 @@ const handleStart = () => {
                 </span>
               </label>
             </div>
-            <div class="toggle-pair options-toggle-pair">
+            <div class="toggles-row-middle">
+              <div class="toggle-pair">
+                <span class="main-label options-label questions-label">100% Questions</span>
+                <label class="toggle">
+                  <input type="checkbox" v-model="questionsFull" />
+                  <span class="toggle-track" aria-hidden="true">
+                    <span class="toggle-thumb"></span>
+                  </span>
+                </label>
+              </div>
+            </div>
+            <div class="toggle-pair toggle-pair-options">
               <span class="main-label options-label">Options</span>
               <label class="toggle">
                 <input type="checkbox" v-model="optionsEnabled" />
@@ -497,20 +510,36 @@ label:not(.main-label):not(.radio-item) {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
   width: 100%;
+}
+
+.toggles-row-middle {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.toggle-pair-revision {
+  flex: 0 0 auto;
+}
+
+.toggle-pair-options {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .toggle-pair {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.45rem;
 }
 
-.options-toggle-pair {
-  margin-left: auto;
+.questions-label,
+.revision-label {
+  white-space: nowrap;
 }
 
 .options-label {
@@ -519,10 +548,7 @@ label:not(.main-label):not(.radio-item) {
   align-items: center;
   line-height: 1.1;
   height: 22px;
-}
-
-.revision-label {
-  white-space: nowrap;
+  font-size: 0.88rem;
 }
 
 .toggle {

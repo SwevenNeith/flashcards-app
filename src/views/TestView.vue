@@ -17,8 +17,11 @@ const requestedCount = computed(() => parseInt(route.query.count) || 5)
 const optionsFromQuery = computed(() => route.query.options === 'true')
 /** 100 % révision : uniquement des cartes dues (due_date ≤ aujourd’hui), pas le mix 70/30 */
 const revision100FromQuery = computed(() => route.query.revision100 === 'true')
+/** 100 % questions : le nom (énoncé) est toujours donné en premier ; on ne demande que l’icône et/ou la description */
+const questions100FromQuery = computed(() => route.query.questions100 === 'true')
 /** Mode « Options » (Duo / Carré / Cash) : query ou quizz.options au reprendre */
 const optionsModeActive = ref(false)
+const questions100ModeActive = ref(false)
 
 const isLoading = ref(true)
 const allPoolCards = ref([]) 
@@ -253,8 +256,16 @@ const prepareCardPhase = () => {
   if (currentCard.value.icon) availableFieldsSet.add('icon')
   if (currentCard.value.description) availableFieldsSet.add('description')
 
-  fieldsQueue.value = shuffleArray(Array.from(availableFieldsSet))
-  revealedFields.value = [fieldsQueue.value[0]]
+  if (questions100ModeActive.value) {
+    const targets = []
+    if (currentCard.value.icon) targets.push('icon')
+    if (currentCard.value.description) targets.push('description')
+    fieldsQueue.value = ['name', ...shuffleArray(targets)]
+    revealedFields.value = ['name']
+  } else {
+    fieldsQueue.value = shuffleArray(Array.from(availableFieldsSet))
+    revealedFields.value = [fieldsQueue.value[0]]
+  }
   
   const questionCount = fieldsQueue.value.length - 1
   pointsPerQuestion.value = questionCount > 0 ? 1 / questionCount : 0
@@ -892,9 +903,13 @@ onMounted(async () => {
 
       const useOpts = qData.options === true || qData.options === 'true'
       optionsModeActive.value = useOpts || optionsFromQuery.value
+      const useQuestions100 =
+        qData.questions100 === true || qData.questions100 === 'true'
+      questions100ModeActive.value = useQuestions100 || questions100FromQuery.value
       resumeAnswerRestore = { answer: qData.answer ?? '', cardIdx: currentIndex.value }
     } else {
       optionsModeActive.value = optionsFromQuery.value
+      questions100ModeActive.value = questions100FromQuery.value
       completedCardAnswerSegments.value = []
       currentCardModes.value = []
       // Start new quiz
@@ -988,7 +1003,8 @@ onMounted(async () => {
               to_review: [],
               answer: '',
               options: optionsFromQuery.value,
-              review: revision100FromQuery.value
+              review: revision100FromQuery.value,
+              questions100: questions100FromQuery.value
             }
           ])
           .select()
